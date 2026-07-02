@@ -814,15 +814,15 @@ function openSettings() {
       <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
       <label>🎓 Fournisseur du tuteur IA</label>
       <select id="set-provider" onchange="providerChanged()">
-        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'anthropic') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
+        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'openrouter') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
       <label>Clé API</label>
       <input type="password" id="set-apikey" placeholder="sk-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
-      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a id="set-keyurl" href="${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].keyUrl}" target="_blank" rel="noopener">${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].keyUrl.split('/')[2]}</a>.</p>
+      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a id="set-keyurl" href="${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].keyUrl}" target="_blank" rel="noopener">${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].keyUrl.split('/')[2]}</a>.</p>
       <label>Modèle</label>
-      <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].defaultModel)}">
+      <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].defaultModel)}">
       <datalist id="model-suggestions">
-        ${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].models.map(m => `<option value="${m}">`).join('')}
+        ${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].models.map(m => `<option value="${m}">`).join('')}
       </datalist>
       <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
       <div class="actions">

@@ -55,7 +55,7 @@ const TUTOR_PROVIDERS = {
 };
 
 function tutorProvider() {
-  return TUTOR_PROVIDERS[DB.settings.provider] || TUTOR_PROVIDERS.anthropic;
+  return TUTOR_PROVIDERS[DB.settings.provider] || TUTOR_PROVIDERS.openrouter;
 }
 
 const tutorState = {
