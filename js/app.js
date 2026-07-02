@@ -808,13 +808,18 @@ function openSettings() {
       <label>Nouveaux mots de vocabulaire par jour</label>
       <input type="number" id="set-new" min="1" max="40" value="${DB.settings.newPerDay}">
       <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
-      <label>🎓 Clé API Anthropic (tuteur IA)</label>
-      <input type="password" id="set-apikey" placeholder="sk-ant-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
-      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
-      <label>Modèle du tuteur</label>
-      <select id="set-model" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--baseline);background:var(--page);color:var(--text-primary);font-size:14px">
-        ${TUTOR_MODELS.map(m => `<option value="${m.id}" ${(DB.settings.model || 'claude-opus-4-8') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
+      <label>🎓 Fournisseur du tuteur IA</label>
+      <select id="set-provider" onchange="providerChanged()">
+        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'anthropic') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
+      <label>Clé API</label>
+      <input type="password" id="set-apikey" placeholder="sk-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
+      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a id="set-keyurl" href="${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].keyUrl}" target="_blank" rel="noopener">${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].keyUrl.split('/')[2]}</a>.</p>
+      <label>Modèle</label>
+      <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].defaultModel)}">
+      <datalist id="model-suggestions">
+        ${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].models.map(m => `<option value="${m}">`).join('')}
+      </datalist>
       <div class="actions">
         <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
         <button class="btn secondary small" onclick="closeSettings()">Annuler</button>
@@ -828,6 +833,17 @@ function closeSettings() {
   const m = document.getElementById('settings-modal');
   if (m) m.remove();
 }
+
+// Quand on change de fournisseur : met à jour le lien de création de clé,
+// le modèle par défaut et les suggestions.
+function providerChanged() {
+  const p = TUTOR_PROVIDERS[document.getElementById('set-provider').value];
+  const link = document.getElementById('set-keyurl');
+  link.href = p.keyUrl;
+  link.textContent = p.keyUrl.split('/')[2];
+  document.getElementById('set-model').value = p.defaultModel;
+  document.getElementById('model-suggestions').innerHTML = p.models.map(m => `<option value="${m}">`).join('');
+}
 function saveSettings() {
   const start = document.getElementById('set-start').value;
   const exam = document.getElementById('set-exam').value;
@@ -840,8 +856,9 @@ function saveSettings() {
     return;
   }
   if (n >= 1 && n <= 40) DB.settings.newPerDay = n;
+  DB.settings.provider = document.getElementById('set-provider').value;
   DB.settings.apiKey = document.getElementById('set-apikey').value.trim();
-  DB.settings.model = document.getElementById('set-model').value;
+  DB.settings.model = document.getElementById('set-model').value.trim();
   saveStore();
   closeSettings();
   navigate();

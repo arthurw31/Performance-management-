@@ -303,7 +303,8 @@ table.datatable th { color: var(--text-secondary); font-weight: 600; }
 }
 .modal h3 { margin: 0 0 12px; }
 .modal label { display: block; font-size: 13px; color: var(--text-secondary); margin: 10px 0 4px; }
-.modal input[type="date"], .modal input[type="number"] {
+.modal input[type="date"], .modal input[type="number"],
+.modal input[type="text"], .modal input[type="password"], .modal select {
   width: 100%; padding: 8px 10px; border-radius: 8px;
   border: 1px solid var(--baseline); background: var(--page);
   color: var(--text-primary); font-size: 14px;

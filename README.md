@@ -26,6 +26,17 @@ Toute la progression (scores, plan, flashcards) est stockée localement dans le 
   - **listening Part 2 audio** via la synthèse vocale du navigateur (question + 3 réponses entendues, jamais lues — comme le jour J).
 - **Progression** — historique des scores, précision par sous-test pour cibler les points faibles, vue tableau des sessions.
 
+## Tuteur IA
+
+Le bouton 🎓 ouvre un chat avec un tuteur IA ; chaque question corrigée a un bouton « Demander au tuteur » qui lui envoie le contexte complet. Fournisseurs supportés (clé API à saisir dans les réglages ⚙️, stockée uniquement dans le navigateur) :
+
+| Fournisseur | Clé à créer sur | Remarque |
+|---|---|---|
+| **OpenRouter** (recommandé pour le prix) | openrouter.ai/keys | Accès à DeepSeek, GLM, etc. — quelques centimes/mois. Fonctionne dans le navigateur. |
+| **Anthropic** (Claude) | console.anthropic.com | Meilleures explications (Opus 4.8 par défaut). Fonctionne dans le navigateur. |
+| DeepSeek direct | platform.deepseek.com | Peut être bloqué par le navigateur (CORS) — repli conseillé : OpenRouter. |
+| Z.ai / GLM direct | z.ai | Idem. |
+
 ## Réglages
 
-L'icône ⚙️ permet de modifier la date d'examen, la date de début, le nombre de nouveaux mots par jour, ou de tout réinitialiser.
+L'icône ⚙️ permet de modifier la date d'examen, la date de début, le nombre de nouveaux mots par jour, le fournisseur/modèle du tuteur IA, ou de tout réinitialiser.

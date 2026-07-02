@@ -13,11 +13,50 @@ Règles :
 - Si l'élève envoie le contexte d'une question de la plateforme, appuie-toi dessus.
 - Encourage sans flatter : ton objectif est la progression.`;
 
-const TUTOR_MODELS = [
-  { id: 'claude-opus-4-8', label: 'Claude Opus 4.8 (recommandé — meilleures explications)' },
-  { id: 'claude-sonnet-5', label: 'Claude Sonnet 5 (rapide et économique)' },
-  { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (le plus économique)' }
-];
+/* Fournisseurs supportés.
+   - format 'anthropic' : POST /v1/messages (API Anthropic ou endpoint compatible)
+   - format 'openai'    : POST /chat/completions (OpenRouter, etc.)
+   Seuls Anthropic et OpenRouter garantissent officiellement les appels
+   depuis un navigateur (CORS) ; DeepSeek et Z.ai en direct peuvent être
+   bloqués par le navigateur — d'où le repli conseillé vers OpenRouter. */
+const TUTOR_PROVIDERS = {
+  openrouter: {
+    name: 'OpenRouter — DeepSeek, GLM… (économique, recommandé)',
+    keyUrl: 'https://openrouter.ai/keys',
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    format: 'openai',
+    defaultModel: 'deepseek/deepseek-chat',
+    models: ['deepseek/deepseek-chat', 'z-ai/glm-4.6', 'anthropic/claude-haiku-4.5']
+  },
+  anthropic: {
+    name: 'Anthropic — Claude (meilleures explications)',
+    keyUrl: 'https://console.anthropic.com/settings/keys',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    format: 'anthropic',
+    defaultModel: 'claude-opus-4-8',
+    models: ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5']
+  },
+  deepseek: {
+    name: 'DeepSeek en direct (peut être bloqué par le navigateur)',
+    keyUrl: 'https://platform.deepseek.com/api_keys',
+    endpoint: 'https://api.deepseek.com/anthropic/v1/messages',
+    format: 'anthropic',
+    defaultModel: 'deepseek-chat',
+    models: ['deepseek-chat', 'deepseek-reasoner']
+  },
+  zai: {
+    name: 'Z.ai — GLM en direct (peut être bloqué par le navigateur)',
+    keyUrl: 'https://z.ai',
+    endpoint: 'https://api.z.ai/api/anthropic/v1/messages',
+    format: 'anthropic',
+    defaultModel: 'glm-4.6',
+    models: ['glm-4.6', 'glm-4.5-air', 'glm-4.5-flash']
+  }
+};
+
+function tutorProvider() {
+  return TUTOR_PROVIDERS[DB.settings.provider] || TUTOR_PROVIDERS.anthropic;
+}
 
 const tutorState = {
   open: false,
@@ -89,9 +128,8 @@ function renderTutorMessages() {
     box.innerHTML = `
       <div class="tutor-setup">
         <p><strong>Configure ton tuteur IA</strong></p>
-        <p>Pour poser des questions sur les exercices, ajoute ta clé API Anthropic dans les réglages.
-        Elle est stockée <strong>uniquement dans ton navigateur</strong> et sert à appeler l'API directement.</p>
-        <p>Tu peux créer une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+        <p>Ajoute une clé API dans les réglages : elle est stockée <strong>uniquement dans ton navigateur</strong>.</p>
+        <p>Option économique recommandée : une clé <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> avec le modèle DeepSeek (quelques centimes par mois). Sinon une clé <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> pour Claude.</p>
         <button class="btn small" onclick="openSettings()">⚙️ Ouvrir les réglages</button>
       </div>`;
     return;
@@ -123,39 +161,64 @@ function displayText(content) {
 /* ---------- Appel API ---------- */
 
 async function tutorCallClaude() {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
+  const p = tutorProvider();
+  const model = DB.settings.model || p.defaultModel;
+  let headers, body;
+
+  if (p.format === 'anthropic') {
+    headers = {
       'content-type': 'application/json',
       'x-api-key': DB.settings.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: DB.settings.model || 'claude-opus-4-8',
-      max_tokens: 1024,
-      system: TUTOR_SYSTEM,
-      messages: tutorState.messages
-    })
-  });
+      'anthropic-version': '2023-06-01'
+    };
+    if (DB.settings.provider === 'anthropic' || !DB.settings.provider) {
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    } else {
+      // Les endpoints compatibles (DeepSeek, Z.ai) attendent un Bearer token.
+      headers['authorization'] = `Bearer ${DB.settings.apiKey}`;
+    }
+    body = { model, max_tokens: 1024, system: TUTOR_SYSTEM, messages: tutorState.messages };
+  } else {
+    headers = {
+      'content-type': 'application/json',
+      'authorization': `Bearer ${DB.settings.apiKey}`,
+      'HTTP-Referer': location.origin === 'null' ? 'https://prepa-tagemage-toeic.local' : location.origin,
+      'X-Title': 'Prepa Tage Mage TOEIC'
+    };
+    body = {
+      model, max_tokens: 1024,
+      messages: [{ role: 'system', content: TUTOR_SYSTEM }, ...tutorState.messages]
+    };
+  }
+
+  let res;
+  try {
+    res = await fetch(p.endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+  } catch {
+    throw new Error(`Impossible de joindre ${p.endpoint.split('/')[2]} depuis le navigateur (blocage CORS ou réseau). Ce fournisseur n'autorise probablement pas les appels directs — passe sur OpenRouter dans les réglages ⚙️ : mêmes modèles DeepSeek/GLM, et ça fonctionne dans le navigateur.`);
+  }
 
   if (!res.ok) {
     let msg = `Erreur API (${res.status})`;
     try {
       const err = await res.json();
-      if (res.status === 401) msg = "Clé API invalide ou révoquée — vérifie-la dans les réglages ⚙️.";
+      const detail = err.error && (err.error.message || err.error);
+      if (res.status === 401 || res.status === 403) msg = "Clé API invalide ou non autorisée — vérifie-la dans les réglages ⚙️.";
+      else if (res.status === 402) msg = "Crédit épuisé chez le fournisseur — recharge ton compte.";
       else if (res.status === 429) msg = "Limite de requêtes atteinte — attends un instant puis réessaie.";
-      else if (res.status === 400 && err.error) msg = `Requête refusée : ${err.error.message}`;
-      else if (err.error && err.error.message) msg = `${msg} : ${err.error.message}`;
+      else if (detail) msg = `${msg} : ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`;
     } catch { /* réponse non-JSON */ }
     throw new Error(msg);
   }
 
   const data = await res.json();
-  if (data.stop_reason === 'refusal') {
-    throw new Error("Le modèle a décliné cette demande. Reformule ta question.");
+  if (p.format === 'anthropic') {
+    if (data.stop_reason === 'refusal') throw new Error("Le modèle a décliné cette demande. Reformule ta question.");
+    return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
   }
-  return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const choice = data.choices && data.choices[0];
+  if (!choice || !choice.message || !choice.message.content) throw new Error("Réponse vide du fournisseur — réessaie.");
+  return choice.message.content;
 }
 
 async function tutorSend(prefilled) {
