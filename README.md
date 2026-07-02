@@ -12,13 +12,9 @@ Toute la progression (scores, plan, flashcards) est stockée localement dans le 
 
 ## Synchro multi-appareils (Supabase, gratuit)
 
-1. Crée un compte gratuit sur [supabase.com](https://supabase.com) puis un nouveau projet (n'importe quel nom, région Europe).
-2. Dans le projet : **SQL Editor** → colle le contenu de [`supabase-setup.sql`](supabase-setup.sql) → **Run**.
-3. (Conseillé) **Authentication → Sign In / Up → Email** : décoche « Confirm email » pour éviter l'étape de confirmation par mail.
-4. **Project Settings → API** : copie l'« URL » du projet et la clé « anon public ».
-5. Sur la plateforme : réglages ⚙️ → section « ☁️ Synchro » → colle l'URL et la clé, crée ton compte (email + mot de passe).
+Le projet Supabase est déjà pré-configuré dans l'application : il suffit d'ouvrir les réglages ⚙️ → « ☁️ Synchro » et de **créer un compte** (email + mot de passe). Ensuite tout est automatique : chaque score, tâche cochée ou révision de flashcard est sauvegardé dans le cloud (icône ☁️ dans la barre). Connecte-toi avec le même compte sur un autre appareil pour retrouver ta progression **et ta clé API du tuteur** (stockée dans ta ligne privée, lisible uniquement avec ton compte grâce au Row Level Security).
 
-Ensuite tout est automatique : chaque score, tâche cochée ou révision de flashcard est sauvegardé dans le cloud (icône ☁️ dans la barre), et connecte-toi avec le même compte sur un autre appareil pour retrouver ta progression. La clé API du tuteur IA n'est jamais synchronisée : elle reste locale à chaque appareil.
+Pour utiliser un autre projet Supabase : crée-le sur supabase.com, exécute [`supabase-setup.sql`](supabase-setup.sql) dans son SQL Editor, puis renseigne son URL et sa clé publique dans « Configuration avancée » des réglages.
 
 ## Contenu
 

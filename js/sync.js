@@ -7,9 +7,26 @@
 
 'use strict';
 
+// Projet Supabase de la plateforme (pré-configuré).
+// La clé « publishable » est PUBLIQUE par conception : les données sont
+// protégées par Row Level Security + le mot de passe de chaque compte.
+const SYNC_DEFAULTS = {
+  url: 'https://afivqfrjsehykdbqvcps.supabase.co',
+  anonKey: 'sb_publishable_g3YdBdnDb3Egckiud71aZQ_Cj5W6TeT'
+};
+
 let sb = null;                 // client Supabase
 let syncPushTimer = null;
 const syncState = { user: null, lastSync: null, status: 'off' }; // off | idle | syncing | error
+
+function syncApplyDefaults() {
+  if (!DB.settings) return;
+  if (!DB.settings.sbUrl && SYNC_DEFAULTS.url) {
+    DB.settings.sbUrl = SYNC_DEFAULTS.url;
+    DB.settings.sbKey = SYNC_DEFAULTS.anonKey;
+    localStorage.setItem(LS_KEY, JSON.stringify(DB));
+  }
+}
 
 function syncConfigured() {
   return !!(DB.settings && DB.settings.sbUrl && DB.settings.sbKey && window.supabase);
@@ -23,6 +40,7 @@ function syncClient() {
 }
 
 async function syncInit() {
+  syncApplyDefaults();
   if (!syncConfigured()) { updateSyncBadge(); return; }
   const client = syncClient();
   const { data: { session } } = await client.auth.getSession();
@@ -50,7 +68,7 @@ async function syncPull() {
   const remote = row && row.data;
   if (remote && (remote.lastModified || 0) > (DB.lastModified || 0)) {
     // La version cloud est plus récente : on remplace le local,
-    // en conservant la clé API et la config Supabase de CET appareil.
+    // en conservant la config Supabase de CET appareil.
     const keep = {
       apiKey: DB.settings && DB.settings.apiKey,
       sbUrl: DB.settings && DB.settings.sbUrl,
@@ -59,7 +77,9 @@ async function syncPull() {
     for (const k of Object.keys(DB)) delete DB[k];
     Object.assign(DB, remote);
     DB.settings = DB.settings || {};
-    if (keep.apiKey) DB.settings.apiKey = keep.apiKey;
+    // La clé API du tuteur voyage via le cloud (protégée par ton compte) ;
+    // si le cloud n'en a pas, on garde celle de l'appareil.
+    if (!DB.settings.apiKey && keep.apiKey) DB.settings.apiKey = keep.apiKey;
     DB.settings.sbUrl = keep.sbUrl;
     DB.settings.sbKey = keep.sbKey;
     localStorage.setItem(LS_KEY, JSON.stringify(DB));
@@ -86,7 +106,8 @@ async function syncPushNow() {
   syncState.status = 'syncing'; updateSyncBadge();
   const payload = JSON.parse(JSON.stringify(DB));
   if (payload.settings) {
-    delete payload.settings.apiKey; // la clé du tuteur reste locale
+    // La clé API du tuteur EST synchronisée : elle n'est lisible qu'avec
+    // ton compte (Row Level Security). La config Supabase reste locale.
     delete payload.settings.sbKey;
     delete payload.settings.sbUrl;
   }
@@ -191,17 +212,19 @@ function syncSettingsHTML() {
        </div>`;
   return `
     <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
-    <label>☁️ Synchro multi-appareils (Supabase, gratuit)</label>
+    <label>☁️ Synchro multi-appareils</label>
     <p style="font-size:11.5px;color:var(--muted);margin:2px 0 6px">
-      Crée un projet gratuit sur <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>,
-      exécute le fichier <code>supabase-setup.sql</code> du dépôt dans son SQL Editor,
-      puis colle ici l'URL du projet et la clé « anon public » (Settings → API).</p>
-    <label>URL du projet</label>
-    <input type="text" id="set-sburl" placeholder="https://xxxx.supabase.co" value="${esc(cfg.sbUrl || '')}">
-    <label>Clé anon public</label>
-    <input type="password" id="set-sbkey" placeholder="eyJ..." value="${esc(cfg.sbKey || '')}" autocomplete="off">
+      Crée un compte (ou connecte-toi) pour retrouver ta progression et ta clé API
+      du tuteur sur tous tes appareils. Gratuit, données protégées par ton mot de passe.</p>
     <div id="sync-auth-area">${authPart}</div>
-    <p id="sync-msg" style="font-size:12px;margin:8px 0 0"></p>`;
+    <p id="sync-msg" style="font-size:12px;margin:8px 0 0"></p>
+    <details style="margin-top:10px">
+      <summary style="font-size:11.5px;color:var(--muted);cursor:pointer">Configuration avancée (autre projet Supabase)</summary>
+      <label>URL du projet</label>
+      <input type="text" id="set-sburl" placeholder="https://xxxx.supabase.co" value="${esc(cfg.sbUrl || '')}">
+      <label>Clé publique (anon / publishable)</label>
+      <input type="password" id="set-sbkey" placeholder="sb_publishable_… ou eyJ…" value="${esc(cfg.sbKey || '')}" autocomplete="off">
+    </details>`;
 }
 
 function refreshSettingsSyncSection() {
