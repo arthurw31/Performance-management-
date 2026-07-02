@@ -11,7 +11,11 @@ function loadStore() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
   catch { return {}; }
 }
-function saveStore() { localStorage.setItem(LS_KEY, JSON.stringify(DB)); }
+function saveStore() {
+  DB.lastModified = Date.now();
+  localStorage.setItem(LS_KEY, JSON.stringify(DB));
+  if (typeof schedulePush === 'function') schedulePush(); // synchro cloud éventuelle
+}
 
 const DB = Object.assign({
   settings: null,        // { examDate, startDate, newPerDay }
@@ -820,6 +824,7 @@ function openSettings() {
       <datalist id="model-suggestions">
         ${TUTOR_PROVIDERS[DB.settings.provider || 'anthropic'].models.map(m => `<option value="${m}">`).join('')}
       </datalist>
+      <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
       <div class="actions">
         <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
         <button class="btn secondary small" onclick="closeSettings()">Annuler</button>
@@ -859,7 +864,9 @@ function saveSettings() {
   DB.settings.provider = document.getElementById('set-provider').value;
   DB.settings.apiKey = document.getElementById('set-apikey').value.trim();
   DB.settings.model = document.getElementById('set-model').value.trim();
+  if (typeof syncSaveProjectFields === 'function') syncSaveProjectFields();
   saveStore();
+  if (typeof syncInit === 'function' && typeof syncState !== 'undefined' && !syncState.user) syncInit();
   closeSettings();
   navigate();
   if (typeof renderTutorMessages === 'function') renderTutorMessages();
