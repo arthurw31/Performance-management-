@@ -310,6 +310,55 @@ table.datatable th { color: var(--text-secondary); font-weight: 600; }
 }
 .modal .actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
 
+/* ---------- Tuteur IA ---------- */
+#tutor-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 40;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+#tutor-fab:hover { filter: brightness(1.1); }
+#tutor-panel {
+  position: fixed; right: 18px; bottom: 84px; z-index: 41;
+  width: 380px; max-width: calc(100vw - 24px);
+  height: 520px; max-height: calc(100vh - 120px);
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.28);
+  display: none; flex-direction: column; overflow: hidden;
+}
+#tutor-panel.open { display: flex; }
+.tutor-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 8px 10px 16px; border-bottom: 1px solid var(--grid);
+  font-size: 15px;
+}
+.tutor-head-actions { display: flex; }
+.tutor-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.tutor-msg {
+  max-width: 88%; padding: 9px 13px; border-radius: 12px;
+  font-size: 13.5px; line-height: 1.5; word-wrap: break-word;
+}
+.tutor-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.tutor-msg.assistant { align-self: flex-start; background: var(--accent-soft); color: var(--text-primary); border-bottom-left-radius: 4px; }
+.tutor-msg.typing { color: var(--muted); font-style: italic; }
+.tutor-msg pre {
+  background: rgba(0,0,0,0.08); padding: 8px; border-radius: 6px;
+  overflow-x: auto; font-size: 12px; white-space: pre-wrap;
+}
+.tutor-msg code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 4px; font-size: 12.5px; }
+.tutor-setup { font-size: 13.5px; color: var(--text-secondary); padding: 6px 4px; }
+.tutor-setup p { margin: 0 0 10px; }
+.tutor-input {
+  display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--grid);
+}
+.tutor-input textarea {
+  flex: 1; resize: none; border: 1px solid var(--baseline); border-radius: 8px;
+  padding: 8px 10px; font-size: 13.5px; font-family: inherit;
+  background: var(--page); color: var(--text-primary);
+}
+.tutor-input .btn { padding: 8px 14px; }
+
 .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 30px 10px; }
 .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
 .badge {

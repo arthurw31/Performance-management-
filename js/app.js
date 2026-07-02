@@ -417,6 +417,9 @@ function finishQuiz() {
   DB.sessions.push({ d: new Date().toISOString(), cat: qz.cat, module: qz.module, label: qz.label, score: good, total: qz.questions.length });
   saveStore();
 
+  // Conservé pour que le tuteur IA puisse citer une question depuis la correction.
+  window.lastQuizResults = { questions: qz.questions, answers: qz.answers, letters: qz.letters, label: qz.label };
+
   // Score Tage Mage estimé : +4/-1 ramené sur /600.
   let tmScoreHtml = '';
   if (qz.negative) {
@@ -446,6 +449,7 @@ function finishQuiz() {
             <div style="color:var(--good-text)">Bonne réponse : ${qz.letters[q.answer]}. ${esc(q.choices[q.answer])}</div>
           </div>
           <div class="expl">💡 ${esc(q.expl)}</div>
+          <button class="btn small secondary" style="margin-top:8px" onclick="tutorAskQuizQuestion(${i})">🎓 Demander au tuteur</button>
         </div>`;
       }).join('')}
     </div>
@@ -629,7 +633,10 @@ function answerListening(i) {
       ${item.r.map((r, j) => `${'ABC'[j]}. ${esc(r)} ${j === item.answer ? '✓' : ''}`).join('<br>')}
       <br><br>💡 ${esc(item.expl)}
     </div>
-    <div style="margin-top:12px"><button class="btn" onclick="nextListening()">Suivant →</button></div>`;
+    <div style="margin-top:12px">
+      <button class="btn" onclick="nextListening()">Suivant →</button>
+      <button class="btn secondary" onclick="tutorAskListening(${s.idx})">🎓 Demander au tuteur</button>
+    </div>`;
 }
 
 function nextListening() {
@@ -800,6 +807,14 @@ function openSettings() {
       <input type="date" id="set-exam" value="${DB.settings.examDate}">
       <label>Nouveaux mots de vocabulaire par jour</label>
       <input type="number" id="set-new" min="1" max="40" value="${DB.settings.newPerDay}">
+      <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
+      <label>🎓 Clé API Anthropic (tuteur IA)</label>
+      <input type="password" id="set-apikey" placeholder="sk-ant-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
+      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+      <label>Modèle du tuteur</label>
+      <select id="set-model" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--baseline);background:var(--page);color:var(--text-primary);font-size:14px">
+        ${TUTOR_MODELS.map(m => `<option value="${m.id}" ${(DB.settings.model || 'claude-opus-4-8') === m.id ? 'selected' : ''}>${m.label}</option>`).join('')}
+      </select>
       <div class="actions">
         <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
         <button class="btn secondary small" onclick="closeSettings()">Annuler</button>
@@ -825,9 +840,12 @@ function saveSettings() {
     return;
   }
   if (n >= 1 && n <= 40) DB.settings.newPerDay = n;
+  DB.settings.apiKey = document.getElementById('set-apikey').value.trim();
+  DB.settings.model = document.getElementById('set-model').value;
   saveStore();
   closeSettings();
   navigate();
+  if (typeof renderTutorMessages === 'function') renderTutorMessages();
 }
 
 /* ============================== Init ============================== */
