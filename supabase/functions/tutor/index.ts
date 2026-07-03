@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       headers: {
         'content-type': 'application/json',
         'authorization': `Bearer ${cfg.openrouter_api_key}`,
-        'HTTP-Referer': 'https://arthurw31.github.io/Performance-management-/',
+        'HTTP-Referer': 'https://arthurw31.github.io/plateforme-revision-tage-mage-toeic/',
         'X-Title': 'Prepa Tage Mage TOEIC'
       },
       body: JSON.stringify({
