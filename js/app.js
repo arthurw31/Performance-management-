@@ -333,6 +333,21 @@ function renderToeic() {
         <div class="pill-row"><span class="badge">${TOEIC_LISTENING.length} items</span><span class="badge">~8 min</span></div>
         <button class="btn small" onclick="startListening()">Lancer l'écoute</button>
       </div>
+      <div class="card">
+        <h3>🎧 Listening — Part 3 (conversations)</h3>
+        <p class="desc">Une conversation entre deux personnes est lue à voix haute, puis 3 questions. Le texte n'est pas affiché, comme au vrai TOEIC.</p>
+        <div class="pill-row">${TOEIC_PART3.map((c, i) => `<button class="btn small secondary" onclick="startToeicPart3(${i})">${esc(c.title)}</button>`).join('')}</div>
+      </div>
+      <div class="card">
+        <h3>🎧 Listening — Part 4 (exposés)</h3>
+        <p class="desc">Un court exposé (annonce, message vocal) lu à voix haute, puis 3 questions de compréhension.</p>
+        <div class="pill-row">${TOEIC_PART4.map((c, i) => `<button class="btn small secondary" onclick="startToeicPart4(${i})">${esc(c.title)}</button>`).join('')}</div>
+      </div>
+      <div class="card">
+        <h3>✍️ Grammaire — Part 6 (textes à trous)</h3>
+        <p class="desc">Un texte professionnel avec plusieurs mots manquants à compléter : grammaire et cohérence en contexte.</p>
+        <div class="pill-row">${TOEIC_PART6.map((t, i) => `<button class="btn small secondary" onclick="startToeicPart6(${i})">${esc(t.title)}</button>`).join('')}</div>
+      </div>
     </div>`;
 }
 
@@ -349,6 +364,35 @@ function startToeicReading(i) {
     cat: 'toeic', module: 'reading', label: `TOEIC · Lecture — ${r.title}`,
     questions: r.questions.map(q => ({ ...q, passageText: r.passage })),
     seconds: r.questions.length * 75, letters: 'ABCD', tmScore: false
+  });
+}
+
+function startToeicPart3(i) {
+  const c = TOEIC_PART3[i];
+  if (!('speechSynthesis' in window)) { alert("Synthèse vocale non disponible — essaie Chrome, Edge ou Safari."); return; }
+  startQuiz({
+    cat: 'toeic', module: 'part3', label: `TOEIC · Part 3 — ${c.title}`,
+    questions: c.questions, seconds: c.questions.length * 40, letters: 'ABCD', tmScore: false,
+    audioScript: c.script, audioLabel: 'la conversation'
+  });
+}
+
+function startToeicPart4(i) {
+  const c = TOEIC_PART4[i];
+  if (!('speechSynthesis' in window)) { alert("Synthèse vocale non disponible — essaie Chrome, Edge ou Safari."); return; }
+  startQuiz({
+    cat: 'toeic', module: 'part4', label: `TOEIC · Part 4 — ${c.title}`,
+    questions: c.questions, seconds: c.questions.length * 40, letters: 'ABCD', tmScore: false,
+    audioScript: c.script, audioLabel: "l'exposé"
+  });
+}
+
+function startToeicPart6(i) {
+  const t = TOEIC_PART6[i];
+  startQuiz({
+    cat: 'toeic', module: 'part6', label: `TOEIC · Part 6 — ${t.title}`,
+    questions: t.questions.map(q => ({ ...q, passageText: t.passage })),
+    seconds: t.questions.length * 40, letters: 'ABCD', tmScore: false
   });
 }
 
@@ -373,11 +417,40 @@ function startQuiz(cfg) {
     }, 1000)
   };
   renderQuizQuestion();
+  if (activeQuiz.audioScript) setTimeout(quizPlayAudio, 500); // auto-lecture Part 3/4
 }
 
 function fmtTime(s) {
   s = Math.max(0, s);
   return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+// Lit le script d'un item Listening Part 3/4, en variant la voix par locuteur.
+function quizPlayAudio() {
+  if (!activeQuiz || !activeQuiz.audioScript || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const voices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  const pick = kind => {
+    // Essaie de distinguer une voix "féminine" d'une "masculine" par le nom.
+    const female = voices.find(v => /female|woman|zira|samantha|karen|aria|jenny/i.test(v.name));
+    const male = voices.find(v => /male|man|david|george|guy|mark/i.test(v.name) && v !== female);
+    if (kind === 'W') return female || voices[0] || null;
+    if (kind === 'M') return male || voices[1] || voices[0] || null;
+    return voices[0] || null;
+  };
+  activeQuiz.audioScript.split('\n').forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    const m = t.match(/^(Man|Woman|Narrator)\s*:\s*(.*)$/i);
+    const speaker = m ? m[1][0].toUpperCase() : 'N';
+    const text = m ? m[2] : t;
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    const v = pick(speaker);
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+    u.rate = 0.92;
+    speechSynthesis.speak(u);
+  });
 }
 
 function renderQuizQuestion() {
@@ -394,6 +467,10 @@ function renderQuizQuestion() {
       </div>
     </div>
     ${qz.intro && qz.idx === 0 ? `<div class="expl">${esc(qz.intro)}</div><br>` : ''}
+    ${qz.audioScript ? `<div class="card" style="text-align:center;padding:14px">
+      <button class="btn" onclick="quizPlayAudio()">🔊 Écouter ${esc(qz.audioLabel || "l'enregistrement")}</button>
+      <p class="desc" style="margin:8px 0 0">Écoute puis réponds aux ${qz.questions.length} questions ci-dessous — le texte n'est pas affiché, comme au vrai TOEIC.</p>
+    </div>` : ''}
     ${passage ? `<div class="passage">${esc(passage)}</div>` : ''}
     <div class="qtext">${esc(q.text)}</div>
     <div class="choices">

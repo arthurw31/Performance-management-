@@ -400,3 +400,88 @@ function TMCM() {
     "Les deux informations ensemble ne suffisent pas."
   ];
 }
+
+// Questions supplémentaires, ajoutées aux sous-tests existants (contenu vérifié).
+const TM_EXTRA = {
+  calcul: [
+    { text: "Un train parcourt 240 km en 3 heures. À la même vitesse, quelle distance parcourt-il en 5 heures ?",
+      choices: ["320 km", "360 km", "400 km", "420 km", "480 km"], answer: 2,
+      expl: "Vitesse : 240 / 3 = 80 km/h. En 5 h : 80 × 5 = 400 km." },
+    { text: "Dans une entreprise de 250 employés, 40 % sont des femmes. Combien y a-t-il d'hommes ?",
+      choices: ["100", "120", "150", "175", "200"], answer: 2,
+      expl: "Femmes : 250 × 0,40 = 100. Hommes : 250 − 100 = 150." },
+    { text: "Un produit passe de 80 € à 100 €. Quel est le pourcentage d'augmentation ?",
+      choices: ["20 %", "25 %", "18 %", "22 %", "30 %"], answer: 1,
+      expl: "Augmentation : (100 − 80) / 80 = 20/80 = 0,25 = 25 %. Piège : on divise par la valeur de départ (80), pas par 100." }
+  ],
+  logique: [
+    { text: "Complétez la série : 3, 4, 6, 9, 13, ?",
+      choices: ["16", "17", "18", "19", "20"], answer: 2,
+      expl: "Écarts croissants : +1, +2, +3, +4, puis +5 → 13 + 5 = 18." },
+    { text: "Complétez la série : Z, X, V, T, ?",
+      choices: ["S", "R", "Q", "U", "P"], answer: 1,
+      expl: "On recule de 2 lettres : Z, X, V, T, puis R." },
+    { text: "Trouvez l'intrus : 2, 3, 5, 7, 9, 11",
+      choices: ["2", "3", "9", "7", "11"], answer: 2,
+      expl: "2, 3, 5, 7, 11 sont des nombres premiers ; 9 = 3 × 3 ne l'est pas." }
+  ],
+  conditions: [
+    { text: "Quel est le prix d'un livre ?\n(1) 5 livres identiques coûtent 60 €.\n(2) Un livre coûte le double d'un stylo.",
+      choices: TMCM(), answer: 0,
+      expl: "(1) seule : 60 / 5 = 12 € → suffit. (2) seule : le prix du stylo est inconnu → insuffisant. Réponse A." },
+    { text: "L'entier x est-il pair ?\n(1) x est divisible par 4.\n(2) x est divisible par 3.",
+      choices: TMCM(), answer: 0,
+      expl: "(1) : divisible par 4 ⇒ toujours pair → suffit. (2) : divisible par 3 peut donner 6 (pair) ou 9 (impair) → insuffisant. Réponse A." }
+  ],
+  expression: [
+    { text: "Quel est le synonyme de « éphémère » ?",
+      choices: ["éternel", "passager", "solide", "fréquent", "brumeux"], answer: 1,
+      expl: "« Éphémère » = qui ne dure qu'un temps très court → « passager »." },
+    { text: "Complétez : « Les décisions qu'elles ont ___ sont justes. »",
+      choices: ["pris", "prise", "prises", "prit", "prendre"], answer: 2,
+      expl: "Le COD « que » (= les décisions, féminin pluriel) est placé avant l'auxiliaire avoir → accord : « prises »." },
+    { text: "Que signifie « procrastiner » ?",
+      choices: ["remettre au lendemain", "travailler vite", "critiquer", "abandonner", "improviser"], answer: 0,
+      expl: "« Procrastiner » = repousser sans cesse ce qu'on doit faire, remettre au lendemain." }
+  ],
+  raisonnement: [
+    { text: "« Tous les avocats ont un diplôme de droit. Marc a un diplôme de droit. » Peut-on conclure que Marc est avocat ?",
+      choices: [
+        "Oui, c'est certain.",
+        "Non, on ne peut pas le conclure.",
+        "Oui, s'il travaille au tribunal.",
+        "Non, car il n'a pas le diplôme.",
+        "Oui, par contraposée."
+      ], answer: 1,
+      expl: "Affirmer le conséquent est invalide : avoir le diplôme n'implique pas être avocat (un notaire aussi a un diplôme de droit)." },
+    { text: "Quelle est la négation de « Il pleut toujours le lundi » ?",
+      choices: [
+        "Il ne pleut jamais le lundi.",
+        "Il pleut parfois le lundi.",
+        "Il existe au moins un lundi où il ne pleut pas.",
+        "Il pleut tous les jours sauf le lundi.",
+        "Il ne pleut pas aujourd'hui."
+      ], answer: 2,
+      expl: "La négation de « toujours » n'est pas « jamais » mais « au moins une fois... ne... pas ». Piège classique." }
+  ],
+  comprehension: [
+    { passage: 'pollinisateurs',
+      text: "Quelle solution N'EST PAS mentionnée dans le texte ?",
+      choices: [
+        "Restreindre les pesticides les plus nocifs",
+        "Réintroduire des haies et des jachères fleuries",
+        "Aménager des corridors écologiques",
+        "Importer des abeilles depuis l'étranger",
+        "Agir avant que le déclin ne soit irréversible"
+      ], answer: 3,
+      expl: "Le texte cite les pesticides restreints, les haies/jachères et les corridors écologiques, mais jamais l'importation d'abeilles." },
+    { passage: 'teletravail',
+      text: "Dans le texte, le mot « présentiel » désigne :",
+      choices: ["le travail à distance", "le travail au bureau", "le travail de nuit", "le temps partiel", "le travail en équipe"], answer: 1,
+      expl: "« Présentiel » = sur place, au bureau — par opposition au « distanciel »." }
+  ]
+};
+
+TM_SUBTESTS.forEach(s => {
+  if (TM_EXTRA[s.id]) s.questions.push(...TM_EXTRA[s.id]);
+});
