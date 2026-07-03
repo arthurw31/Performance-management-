@@ -235,7 +235,10 @@ function renderPlan() {
 function renderTageMage() {
   app().innerHTML = `
     <h1>Tage Mage</h1>
-    <p class="sub">Notation officielle appliquée : <strong>+4</strong> par bonne réponse, <strong>−1</strong> par erreur, 0 sans réponse. 80 secondes par question, comme le jour J.</p>
+    <p class="sub">Barème officiel 2025 : <strong>+4</strong> par bonne réponse, <strong>0</strong> pour une erreur ou une absence de réponse (plus de points négatifs depuis janvier 2025). 90 questions en 2h le jour J, sans calculatrice — ici 80 s/question.</p>
+    <div class="card" style="border-color:var(--accent);padding:12px 16px;margin-bottom:14px">
+      💡 <strong>Stratégie clé :</strong> comme une erreur ne coûte rien de plus qu'un blanc, <strong>réponds à toutes les questions</strong>, même en dernière seconde. Ne laisse jamais une case vide.
+    </div>
     <div class="grid2">
       ${TM_SUBTESTS.map(s => {
         const hist = DB.sessions.filter(x => x.cat === 'tm' && x.module === s.id);
@@ -266,7 +269,7 @@ function startTMSubtest(id) {
     cat: 'tm', module: id, label: `Tage Mage · ${s.name}`,
     questions: s.questions.map(q => ({ ...q, subtest: id })),
     seconds: s.questions.length * 80,
-    letters: 'ABCDE', negative: true,
+    letters: 'ABCDE', tmScore: true,
     intro: s.conditionsMode ? s.desc : null
   });
 }
@@ -279,7 +282,7 @@ function startTMMock() {
   });
   startQuiz({
     cat: 'tm', module: 'mock', label: 'Tage Mage · Test blanc express',
-    questions: qs, seconds: qs.length * 80, letters: 'ABCDE', negative: true, showTMScore: true
+    questions: qs, seconds: qs.length * 80, letters: 'ABCDE', tmScore: true
   });
 }
 
@@ -291,7 +294,21 @@ function renderToeic() {
   const gBest = gHist.length ? Math.max(...gHist.map(h => Math.round(100 * h.score / h.total))) : null;
   app().innerHTML = `
     <h1>TOEIC</h1>
-    <p class="sub">Le score TOEIC se construit surtout sur le vocabulaire (tous les jours) et les automatismes de grammaire et d'écoute.</p>
+    <p class="sub">TOEIC Listening &amp; Reading : 200 questions, 2h, score de <strong>10 à 990</strong>. Le score se construit surtout sur le vocabulaire (tous les jours) et les automatismes de grammaire et d'écoute.</p>
+    <details class="card" style="margin-bottom:14px">
+      <summary style="cursor:pointer;font-weight:600;font-size:14px">📋 Structure réelle de l'examen (les 7 parties)</summary>
+      <div style="overflow-x:auto"><table class="datatable" style="margin-top:10px">
+        <tr><th>Partie</th><th>Type</th><th>Questions</th></tr>
+        <tr><td>🎧 Listening (45 min · 100 q)</td><td>Part 1 — Photos</td><td>6</td></tr>
+        <tr><td></td><td>Part 2 — Question / réponse</td><td>25</td></tr>
+        <tr><td></td><td>Part 3 — Conversations</td><td>39</td></tr>
+        <tr><td></td><td>Part 4 — Courts exposés</td><td>30</td></tr>
+        <tr><td>📖 Reading (75 min · 100 q)</td><td>Part 5 — Phrases à trous</td><td>30</td></tr>
+        <tr><td></td><td>Part 6 — Textes à compléter</td><td>16</td></tr>
+        <tr><td></td><td>Part 7 — Compréhension de textes</td><td>54</td></tr>
+      </table></div>
+      <p class="desc" style="margin:10px 0 0">Cette plateforme t'entraîne sur les parties les plus rentables à réviser : vocabulaire (transversal), grammaire (Part 5/6), lecture (Part 7) et écoute (Part 2). Astuce vérifiée : en Reading, si deux réponses sont synonymes, élimine-les — il ne peut y avoir qu'une bonne réponse.</p>
+    </details>
     <div class="grid2">
       <div class="card">
         <h3>🃏 Vocabulaire — flashcards</h3>
@@ -322,7 +339,7 @@ function renderToeic() {
 function startToeicGrammar() {
   startQuiz({
     cat: 'toeic', module: 'grammar', label: 'TOEIC · Grammaire (Part 5)',
-    questions: TOEIC_GRAMMAR, seconds: TOEIC_GRAMMAR.length * 30, letters: 'ABCD', negative: false
+    questions: TOEIC_GRAMMAR, seconds: TOEIC_GRAMMAR.length * 30, letters: 'ABCD', tmScore: false
   });
 }
 
@@ -331,7 +348,7 @@ function startToeicReading(i) {
   startQuiz({
     cat: 'toeic', module: 'reading', label: `TOEIC · Lecture — ${r.title}`,
     questions: r.questions.map(q => ({ ...q, passageText: r.passage })),
-    seconds: r.questions.length * 75, letters: 'ABCD', negative: false
+    seconds: r.questions.length * 75, letters: 'ABCD', tmScore: false
   });
 }
 
@@ -424,12 +441,13 @@ function finishQuiz() {
   // Conservé pour que le tuteur IA puisse citer une question depuis la correction.
   window.lastQuizResults = { questions: qz.questions, answers: qz.answers, letters: qz.letters, label: qz.label };
 
-  // Score Tage Mage estimé : +4/-1 ramené sur /600.
+  // Score Tage Mage estimé — barème 2025+ : +4 par bonne réponse,
+  // 0 pour une erreur OU une absence de réponse (plus de points négatifs).
   let tmScoreHtml = '';
-  if (qz.negative) {
-    const raw = Math.max(0, good * 4 - bad);
+  if (qz.tmScore) {
+    const raw = good * 4;
     const est = Math.round(600 * raw / (qz.questions.length * 4));
-    tmScoreHtml = `<div class="tile"><div class="label">Score Tage Mage estimé (barème +4/−1)</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 600</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
+    tmScoreHtml = `<div class="tile"><div class="label">Score Tage Mage estimé (barème 2025 : +4 / 0)</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 600</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
   }
 
   app().innerHTML = `

@@ -24,7 +24,7 @@ Pour utiliser un autre projet Supabase : crée-le sur supabase.com, exécute [`s
   - *Phase 2 · Entraînement* : séries chronométrées ciblées ;
   - *Phase 3 · Simulation* : tests blancs et consolidation.
   - Alternance un jour Tage Mage / un jour TOEIC, un jour léger par semaine, vocabulaire quotidien.
-- **Tage Mage** — 60 questions réparties sur les 6 sous-tests (Compréhension, Calcul, Raisonnement & argumentation, Conditions minimales, Expression, Logique), chrono réel (80 s/question), barème officiel +4/−1, corrections détaillées, test blanc express avec score estimé /600.
+- **Tage Mage** — 60 questions réparties sur les 6 sous-tests (Compréhension, Calcul, Raisonnement & argumentation, Conditions minimales, Expression, Logique), chrono réel (80 s/question), **barème officiel 2025** (+4 bonne réponse, 0 erreur/blanc — plus de points négatifs), corrections détaillées, test blanc express avec score estimé /600. Rappel du vrai examen : 90 questions en 2h, sans calculatrice, score sur 600.
 - **TOEIC** —
   - 80 flashcards de vocabulaire business avec **répétition espacée** (algorithme type SM-2) ;
   - grammaire Part 5 chronométrée (30 s/question) avec explications ;
