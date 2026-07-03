@@ -34,14 +34,24 @@ Pour utiliser un autre projet Supabase : crée-le sur supabase.com, exécute [`s
 
 ## Tuteur IA
 
-Le bouton 🎓 ouvre un chat avec un tuteur IA ; chaque question corrigée a un bouton « Demander au tuteur » qui lui envoie le contexte complet. Fournisseurs supportés (clé API à saisir dans les réglages ⚙️, stockée uniquement dans le navigateur) :
+Le bouton 🎓 ouvre un chat avec un tuteur IA ; chaque question corrigée a un bouton « Demander au tuteur » qui lui envoie le contexte complet.
+
+**Mode intégré (défaut, recommandé)** — aucune clé à saisir. La clé API est gardée côté serveur dans une Edge Function Supabase (`supabase/functions/tutor/`) ; le navigateur n'envoie que le jeton de session de l'utilisateur connecté. Il suffit d'être connecté (section ☁️ Synchro). Configuration serveur : voir plus bas.
+
+**Fournisseurs externes (avancé)** — pour utiliser ta propre clé, choisis un fournisseur dans les réglages ⚙️. La clé est alors stockée dans ton navigateur et synchronisée via ton compte.
 
 | Fournisseur | Clé à créer sur | Remarque |
 |---|---|---|
-| **OpenRouter** (recommandé pour le prix) | openrouter.ai/keys | Accès à DeepSeek, GLM, etc. — quelques centimes/mois. Fonctionne dans le navigateur. |
+| **OpenRouter** | openrouter.ai/keys | Accès à DeepSeek, GLM, etc. — quelques centimes/mois. Fonctionne dans le navigateur. |
 | **Anthropic** (Claude) | console.anthropic.com | Meilleures explications (Opus 4.8 par défaut). Fonctionne dans le navigateur. |
 | DeepSeek direct | platform.deepseek.com | Peut être bloqué par le navigateur (CORS) — repli conseillé : OpenRouter. |
 | Z.ai / GLM direct | z.ai | Idem. |
+
+### Configuration du mode intégré (une fois)
+
+1. Table `app_config` : déjà créée par `supabase-setup.sql`.
+2. Dans le SQL Editor Supabase, insère ta clé (décommente le bloc `insert into public.app_config …` du fichier SQL et mets ta vraie clé OpenRouter).
+3. Déploie la fonction : `supabase functions deploy tutor` (ou via le dashboard). Le secret `SUPABASE_SERVICE_ROLE_KEY` est fourni automatiquement à la fonction.
 
 ## Réglages
 

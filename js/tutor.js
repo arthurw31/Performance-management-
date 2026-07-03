@@ -20,6 +20,14 @@ Règles :
    depuis un navigateur (CORS) ; DeepSeek et Z.ai en direct peuvent être
    bloqués par le navigateur — d'où le repli conseillé vers OpenRouter. */
 const TUTOR_PROVIDERS = {
+  managed: {
+    name: '🔒 Intégré — aucune clé à saisir (recommandé)',
+    keyUrl: '',
+    endpoint: '', // construit à partir de l\'URL Supabase : /functions/v1/tutor
+    format: 'managed',
+    defaultModel: '',
+    models: []
+  },
   openrouter: {
     name: 'OpenRouter — DeepSeek, GLM… (économique, recommandé)',
     keyUrl: 'https://openrouter.ai/keys',
@@ -55,7 +63,11 @@ const TUTOR_PROVIDERS = {
 };
 
 function tutorProvider() {
-  return TUTOR_PROVIDERS[DB.settings.provider] || TUTOR_PROVIDERS.openrouter;
+  return TUTOR_PROVIDERS[DB.settings.provider] || TUTOR_PROVIDERS.managed;
+}
+
+function tutorLoggedIn() {
+  return typeof syncState !== 'undefined' && !!syncState.user;
 }
 
 const tutorState = {
@@ -124,14 +136,20 @@ function renderTutorMessages() {
   const box = document.getElementById('tutor-msgs');
   if (!box) return;
 
-  if (!DB.settings || !DB.settings.apiKey) {
-    box.innerHTML = `
-      <div class="tutor-setup">
-        <p><strong>Configure ton tuteur IA</strong></p>
-        <p>Ajoute une clé API dans les réglages : elle est stockée <strong>uniquement dans ton navigateur</strong>.</p>
-        <p>Option économique recommandée : une clé <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> avec le modèle DeepSeek (quelques centimes par mois). Sinon une clé <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> pour Claude.</p>
-        <button class="btn small" onclick="openSettings()">⚙️ Ouvrir les réglages</button>
-      </div>`;
+  const p = DB.settings ? tutorProvider() : TUTOR_PROVIDERS.managed;
+  if (p.format === 'managed' ? !tutorLoggedIn() : (!DB.settings || !DB.settings.apiKey)) {
+    box.innerHTML = p.format === 'managed'
+      ? `<div class="tutor-setup">
+          <p><strong>Connecte-toi pour utiliser le tuteur 🎓</strong></p>
+          <p>Le tuteur est intégré à la plateforme — aucune clé à configurer.
+          Il suffit de te connecter à ton compte (le même que la synchro).</p>
+          <button class="btn small" onclick="openSettings()">⚙️ Se connecter</button>
+        </div>`
+      : `<div class="tutor-setup">
+          <p><strong>Configure ton tuteur IA</strong></p>
+          <p>Le fournisseur choisi nécessite une clé API, stockée dans ton navigateur et synchronisée via ton compte.</p>
+          <button class="btn small" onclick="openSettings()">⚙️ Ouvrir les réglages</button>
+        </div>`;
     return;
   }
 
@@ -164,6 +182,36 @@ async function tutorCallClaude() {
   const p = tutorProvider();
   const model = DB.settings.model || p.defaultModel;
   let headers, body;
+
+  if (p.format === 'managed') {
+    // Mode intégré : la clé API vit sur le serveur (Edge Function Supabase).
+    // On envoie uniquement le jeton de session de l'utilisateur connecté.
+    const client = (typeof syncClient === 'function') ? syncClient() : null;
+    if (!client || !tutorLoggedIn()) {
+      throw new Error('Connecte-toi (réglages ⚙️ → ☁️ Synchro) pour utiliser le tuteur.');
+    }
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) throw new Error('Session expirée — reconnecte-toi dans les réglages ⚙️.');
+
+    let res;
+    try {
+      res = await fetch(`${DB.settings.sbUrl}/functions/v1/tutor`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'authorization': `Bearer ${session.access_token}`,
+          'apikey': DB.settings.sbKey
+        },
+        body: JSON.stringify({ system: TUTOR_SYSTEM, messages: tutorState.messages })
+      });
+    } catch {
+      throw new Error('Impossible de joindre le serveur du tuteur — vérifie ta connexion internet.');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Erreur du tuteur (${res.status}).`);
+    if (!data.text) throw new Error('Réponse vide du tuteur — réessaie.');
+    return data.text;
+  }
 
   if (p.format === 'anthropic') {
     headers = {
@@ -223,7 +271,10 @@ async function tutorCallClaude() {
 
 async function tutorSend(prefilled) {
   if (tutorState.busy) return;
-  if (!DB.settings || !DB.settings.apiKey) {
+  const p = DB.settings ? tutorProvider() : TUTOR_PROVIDERS.managed;
+  // Prérequis selon le mode : connecté (intégré) ou clé saisie (externe).
+  const ready = p.format === 'managed' ? tutorLoggedIn() : (DB.settings && DB.settings.apiKey);
+  if (!ready) {
     if (!tutorState.open) toggleTutor();
     renderTutorMessages();
     return;

@@ -814,16 +814,9 @@ function openSettings() {
       <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
       <label>🎓 Fournisseur du tuteur IA</label>
       <select id="set-provider" onchange="providerChanged()">
-        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'openrouter') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
+        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'managed') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
-      <label>Clé API</label>
-      <input type="password" id="set-apikey" placeholder="sk-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
-      <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Stockée uniquement dans ce navigateur. Crée une clé sur <a id="set-keyurl" href="${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].keyUrl}" target="_blank" rel="noopener">${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].keyUrl.split('/')[2]}</a>.</p>
-      <label>Modèle</label>
-      <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].defaultModel)}">
-      <datalist id="model-suggestions">
-        ${TUTOR_PROVIDERS[DB.settings.provider || 'openrouter'].models.map(m => `<option value="${m}">`).join('')}
-      </datalist>
+      <div id="provider-fields">${providerFieldsHTML(DB.settings.provider || 'managed')}</div>
       <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
       <div class="actions">
         <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
@@ -839,15 +832,29 @@ function closeSettings() {
   if (m) m.remove();
 }
 
-// Quand on change de fournisseur : met à jour le lien de création de clé,
-// le modèle par défaut et les suggestions.
+// Champs de configuration selon le fournisseur : rien en mode intégré,
+// clé + modèle pour les fournisseurs externes.
+function providerFieldsHTML(id) {
+  const p = TUTOR_PROVIDERS[id] || TUTOR_PROVIDERS.managed;
+  if (p.format === 'managed') {
+    return `<p style="font-size:12px;color:var(--muted);margin:8px 0 0">
+      Rien à configurer : la clé API est gardée côté serveur, jamais dans le navigateur.
+      Il suffit d'être connecté (section ☁️ Synchro ci-dessous).</p>`;
+  }
+  return `
+    <label>Clé API</label>
+    <input type="password" id="set-apikey" placeholder="sk-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
+    <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Crée une clé sur <a href="${p.keyUrl}" target="_blank" rel="noopener">${p.keyUrl.split('/')[2]}</a>.</p>
+    <label>Modèle</label>
+    <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || p.defaultModel)}">
+    <datalist id="model-suggestions">${p.models.map(m => `<option value="${m}">`).join('')}</datalist>`;
+}
+
 function providerChanged() {
-  const p = TUTOR_PROVIDERS[document.getElementById('set-provider').value];
-  const link = document.getElementById('set-keyurl');
-  link.href = p.keyUrl;
-  link.textContent = p.keyUrl.split('/')[2];
-  document.getElementById('set-model').value = p.defaultModel;
-  document.getElementById('model-suggestions').innerHTML = p.models.map(m => `<option value="${m}">`).join('');
+  const id = document.getElementById('set-provider').value;
+  document.getElementById('provider-fields').innerHTML = providerFieldsHTML(id);
+  const model = document.getElementById('set-model');
+  if (model) model.value = (TUTOR_PROVIDERS[id] || TUTOR_PROVIDERS.managed).defaultModel;
 }
 function saveSettings() {
   const start = document.getElementById('set-start').value;
@@ -862,8 +869,10 @@ function saveSettings() {
   }
   if (n >= 1 && n <= 40) DB.settings.newPerDay = n;
   DB.settings.provider = document.getElementById('set-provider').value;
-  DB.settings.apiKey = document.getElementById('set-apikey').value.trim();
-  DB.settings.model = document.getElementById('set-model').value.trim();
+  const keyEl = document.getElementById('set-apikey');
+  if (keyEl) DB.settings.apiKey = keyEl.value.trim();
+  const modelEl = document.getElementById('set-model');
+  if (modelEl) DB.settings.model = modelEl.value.trim();
   if (typeof syncSaveProjectFields === 'function') syncSaveProjectFields();
   saveStore();
   if (typeof syncInit === 'function' && typeof syncState !== 'undefined' && !syncState.user) syncInit();
