@@ -116,7 +116,9 @@ body {
 }
 .iconbtn:hover { background: var(--accent-soft); color: var(--text-primary); }
 
-main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 96px; }
+main { width: 100%; max-width: 1320px; margin: 0 auto; padding: 28px 40px 96px; }
+@media (min-width: 1600px) { main { max-width: 1480px; } }
+@media (max-width: 700px) { main { padding: 20px 16px 90px; } }
 
 h1 { font-family: var(--font-head); font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; margin: 8px 0 4px; }
 h2 { font-family: var(--font-head); font-size: 18px; letter-spacing: -0.01em; margin: 26px 0 12px; }
@@ -235,9 +237,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus
   white-space: pre-wrap; max-height: 320px; overflow-y: auto;
   border: 1px solid var(--border);
 }
-.qtext { font-size: 16.5px; font-weight: 600; margin: 6px 0 16px; white-space: pre-wrap; line-height: 1.45; }
+.qtext { font-size: 16.5px; font-weight: 600; margin: 6px 0 16px; white-space: pre-wrap; line-height: 1.45; max-width: 900px; }
 
-.choices { display: flex; flex-direction: column; gap: 9px; }
+/* Confort de lecture en quiz sur grand écran : on borne la largeur du texte. */
+.passage { max-width: 900px; }
+.choices { display: flex; flex-direction: column; gap: 9px; max-width: 900px; }
 .choice {
   display: flex; gap: 12px; align-items: flex-start;
   background: var(--surface-1); border: 1.5px solid var(--baseline);
