@@ -489,6 +489,7 @@ function renderQuizQuestion() {
   const q = qz.questions[qz.idx];
   const passage = q.passageText || (q.passage ? TM_PASSAGES[q.passage] : null);
   app().innerHTML = `
+    <div class="quiz-shell">
     <div class="quiz-head">
       <div><strong>${esc(qz.label)}</strong>${q.section ? ` <span class="badge">${esc(q.section)}</span>` : ''}
         <div class="qcount">Question ${qz.idx + 1} / ${qz.questions.length}</div></div>
@@ -518,6 +519,7 @@ function renderQuizQuestion() {
     </div>
     <div class="qdots">
       ${qz.questions.map((_, i) => `<button class="qdot ${qz.answers[i] !== null ? 'answered' : ''} ${i === qz.idx ? 'current' : ''}" onclick="jumpQuiz(${i})">${i + 1}</button>`).join('')}
+    </div>
     </div>`;
 }
 
@@ -573,8 +575,8 @@ function finishQuiz() {
         const ok = a === q.answer;
         return `<div class="result-q">
           <div class="verdict ${ok ? 'ok' : 'ko'}">${ok ? '✓ Correct' : a === null ? '∅ Sans réponse' : '✗ Incorrect'} — Question ${i + 1}${q.section ? ' · ' + esc(q.section) : ''}</div>
-          <div class="qtext" style="font-size:14px">${esc(q.text)}</div>
-          <div style="font-size:13.5px">
+          <div class="qtext" style="font-size:16.5px">${esc(q.text)}</div>
+          <div style="font-size:15px">
             ${a !== null && !ok ? `<div style="color:var(--critical)">Ta réponse : ${qz.letters[a]}. ${esc(q.choices[a])}</div>` : ''}
             <div style="color:var(--good-text)">Bonne réponse : ${qz.letters[q.answer]}. ${esc(q.choices[q.answer])}</div>
           </div>
@@ -637,6 +639,7 @@ function renderFlashcard() {
   const c = TOEIC_VOCAB[idx];
   const st = cardState(idx);
   app().innerHTML = `
+    <div class="quiz-shell">
     <div class="quiz-head">
       <div><strong>Flashcards TOEIC</strong><div class="qcount">Carte ${s.pos + 1} / ${s.queue.length} ${st.reps === 0 ? '· <span style="color:var(--accent)">nouveau mot</span>' : ''}</div></div>
       <a class="btn small secondary" href="#/toeic">Quitter</a>
@@ -651,7 +654,8 @@ function renderFlashcard() {
       <button onclick="gradeCard(3)">Difficile<small>bientôt</small></button>
       <button onclick="gradeCard(4)">Bien<small>quelques jours</small></button>
       <button class="easy" onclick="gradeCard(5)">Facile<small>plus tard</small></button>
-    </div>` : ''}`;
+    </div>` : ''}
+    </div>`;
 }
 
 function flipCard() { fcSession.flipped = true; renderFlashcard(); }
@@ -724,6 +728,7 @@ function renderListening() {
   }
   const item = TOEIC_LISTENING[s.idx];
   app().innerHTML = `
+    <div class="quiz-shell">
     <div class="quiz-head">
       <div><strong>TOEIC · Listening Part 2</strong><div class="qcount">Item ${s.idx + 1} / ${TOEIC_LISTENING.length} — Score : ${s.score}</div></div>
       <a class="btn small secondary" href="#/toeic">Quitter</a>
@@ -735,6 +740,7 @@ function renderListening() {
         ${['A', 'B', 'C'].map((L, i) => `<button id="abc-${i}" onclick="answerListening(${i})" ${s.answered ? 'disabled' : ''}>${L}</button>`).join('')}
       </div>
       <div id="listen-feedback" class="transcript"></div>
+    </div>
     </div>`;
   if (!s.answered) setTimeout(playListenItem, 400);
 }
