@@ -151,16 +151,31 @@ function renderDashboard() {
   const vocabSeen = Object.values(DB.srs).filter(c => c.reps > 0).length;
   const dueCount = srsQueue().length;
 
-  app().innerHTML = `
-    <h1>Bonjour 👋</h1>
-    <p class="sub">Objectif : Tage Mage + TOEIC le <strong>${fmtDate(DB.settings.examDate)}</strong>.
-      <a href="javascript:openSettings()">Modifier</a></p>
+  // 7 prochains jours du plan (aujourd'hui inclus) pour la bande semaine
+  const idx = days.findIndex(d => d.date >= todayISO());
+  const week = idx >= 0 ? days.slice(idx, idx + 7) : [];
 
-    <div class="grid2">
-      <div class="card" style="text-align:center">
-        <div class="hero-num">${daysLeft}</div>
-        <div class="hero-cap">jour${daysLeft > 1 ? 's' : ''} avant l'examen</div>
+  app().innerHTML = `
+    <div class="hero">
+      <div style="position:relative;z-index:1">
+        <h1>Bonjour 👋</h1>
+        <p class="sub">Objectif : Tage Mage + TOEIC le <strong>${fmtDate(DB.settings.examDate)}</strong>
+          · <a href="javascript:openSettings()">Modifier</a></p>
       </div>
+      <div class="hero-count">
+        <div class="n">${daysLeft}</div>
+        <div class="c">jour${daysLeft > 1 ? 's' : ''} avant l'examen</div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile c-orange"><div class="label">Plan suivi</div><div class="value">${prog.pct}%</div><div class="delta">${prog.done}/${prog.all} tâches à ce jour</div></div>
+      <div class="tile c-blue"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-green"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-violet"><div class="label">Vocabulaire vu</div><div class="value">${vocabSeen}</div><div class="delta">sur ${TOEIC_VOCAB.length} mots · ${dueCount} à réviser</div></div>
+    </div>
+
+    <div class="grid2" style="margin-top:18px">
       <div class="card">
         <h3>📅 Session du jour ${today ? `<span class="badge">${today.type === 'tm' ? 'Tage Mage' : today.type === 'toeic' ? 'TOEIC' : 'Repos actif'} · ${PHASE_NAMES[today.phase]}</span>` : ''}</h3>
         ${today ? today.tasks.map((t, i) => {
@@ -169,20 +184,36 @@ function renderDashboard() {
             <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleTask('${today.date}',${i},this.checked);renderDashboard()"> ${esc(t)}</label>`;
         }).join('') : `<p class="desc">Le plan est terminé — c'est le jour J (ou après). Bonne chance ! 🍀</p>`}
       </div>
+      <div class="card">
+        <h3>🔁 Vocabulaire du jour</h3>
+        <p class="desc">${dueCount > 0
+          ? `<strong>${dueCount}</strong> carte${dueCount > 1 ? 's' : ''} à réviser aujourd'hui — la régularité fait tout en répétition espacée.`
+          : `Aucune carte en attente — bravo ! Lance quand même une session pour découvrir de nouveaux mots.`}</p>
+        <a class="btn small" href="#/toeic">Lancer les flashcards</a>
+      </div>
     </div>
 
-    <div class="tiles">
-      <div class="tile"><div class="label">Plan suivi</div><div class="value">${prog.pct}%</div><div class="delta">${prog.done}/${prog.all} tâches à ce jour</div></div>
-      <div class="tile"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
-      <div class="tile"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
-      <div class="tile"><div class="label">Vocabulaire vu</div><div class="value">${vocabSeen}</div><div class="delta">sur ${TOEIC_VOCAB.length} mots · ${dueCount} à réviser</div></div>
-    </div>
+    ${week.length ? `
+    <h2>Cette semaine</h2>
+    <div class="week-strip">
+      ${week.map(d => {
+        const isToday = d.date === todayISO();
+        const doneN = (DB.plan[d.date] || []).filter(Boolean).length;
+        const allDone = doneN >= d.tasks.length;
+        return `<a class="wday ${d.type} ${isToday ? 'today' : ''}" href="#/plan">
+          <div class="d">${esc(fmtDate(d.date))}</div>
+          <div class="t">${d.type === 'tm' ? 'Tage Mage' : d.type === 'toeic' ? 'TOEIC' : '☕ Repos'}</div>
+          <div class="s ${allDone ? 'done' : ''}">${allDone ? '✓ terminé' : `${doneN}/${d.tasks.length} tâches`}</div>
+        </a>`;
+      }).join('')}
+    </div>` : ''}
 
     <h2>Accès rapide</h2>
-    <div class="grid3">
-      <div class="card"><h3>🧠 Tage Mage</h3><p class="desc">6 sous-tests, séries chronométrées avec corrections détaillées.</p><a class="btn small" href="#/tagemage">S'entraîner</a></div>
-      <div class="card"><h3>🇬🇧 TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio.</p><a class="btn small" href="#/toeic">S'entraîner</a></div>
-      <div class="card"><h3>📈 Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p><a class="btn small" href="#/stats">Voir les stats</a></div>
+    <div class="grid4">
+      <div class="card qc blue" onclick="location.hash='#/tagemage'"><div class="chip">🧠</div><h3>Tage Mage</h3><p class="desc">6 sous-tests, séries chronométrées avec corrections détaillées.</p><a class="btn small" href="#/tagemage">S'entraîner</a></div>
+      <div class="card qc green" onclick="location.hash='#/toeic'"><div class="chip">🇬🇧</div><h3>TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio.</p><a class="btn small" href="#/toeic">S'entraîner</a></div>
+      <div class="card qc orange" onclick="location.hash='#/plan'"><div class="chip">🗓️</div><h3>Plan de révision</h3><p class="desc">Programme jour par jour jusqu'à l'examen, en 3 phases.</p><a class="btn small" href="#/plan">Voir le plan</a></div>
+      <div class="card qc violet" onclick="location.hash='#/stats'"><div class="chip">📈</div><h3>Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p><a class="btn small" href="#/stats">Voir les stats</a></div>
     </div>`;
 }
 
