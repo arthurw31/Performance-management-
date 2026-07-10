@@ -98,6 +98,60 @@ const TOEIC_PART4 = [
   }
 ];
 
+// Part 1 : description de photo. Au vrai TOEIC, on voit une photo et on entend
+// 4 phrases (A-D) non écrites ; on choisit celle qui décrit le mieux l'image.
+// Ici la « photo » est décrite en français, les 4 phrases sont lues en anglais.
+const TOEIC_PART1 = [
+  { scene: "Un homme en costume tape sur un ordinateur portable dans un bureau. Une tasse de café est posée à côté de lui.",
+    statements: [
+      "He is typing on a laptop.",
+      "He is drinking a cup of coffee.",
+      "He is turning off the computer.",
+      "He is cleaning his desk."
+    ], answer: 0,
+    expl: "Il TAPE sur l'ordinateur. Piège classique : la tasse est visible mais il ne BOIT pas — un objet présent ne veut pas dire que l'action a lieu." },
+  { scene: "Plusieurs personnes attendent debout sur un quai de gare. Un train arrive au loin.",
+    statements: [
+      "The passengers are boarding the train.",
+      "People are waiting on a platform.",
+      "The train is being repaired.",
+      "The station is empty."
+    ], answer: 1,
+    expl: "Ils ATTENDENT sur le quai. Ils ne montent pas encore dans le train (il arrive au loin) — piège d'anticipation." },
+  { scene: "Une femme debout devant des étagères range des documents dans un classeur.",
+    statements: [
+      "She is reading a newspaper.",
+      "The shelves are being installed.",
+      "She is filing some documents.",
+      "She is closing the window."
+    ], answer: 2,
+    expl: "« To file documents » = classer des documents. Les étagères existent déjà : « are being installed » (passif en cours) est faux." },
+  { scene: "Deux ouvriers portant des casques de chantier examinent des plans devant un bâtiment en construction.",
+    statements: [
+      "They are buying some tools.",
+      "They are wearing hard hats.",
+      "The construction site is closed.",
+      "They are painting a wall."
+    ], answer: 1,
+    expl: "« Hard hats » = casques de chantier ; ils les PORTENT. Les autres actions (acheter, peindre) ne sont pas décrites." },
+  { scene: "Une salle de réunion vide : des chaises sont disposées autour d'une grande table, un écran est fixé au mur.",
+    statements: [
+      "A meeting is in progress.",
+      "People are leaving the room.",
+      "The screen is being repaired.",
+      "Chairs have been arranged around a table."
+    ], answer: 3,
+    expl: "Passif d'état « have been arranged » : les chaises SONT disposées. La salle est vide, donc aucune action humaine en cours n'est correcte." },
+  { scene: "À la terrasse d'un café, un serveur dépose des assiettes devant des clients attablés.",
+    statements: [
+      "The customers are paying the bill.",
+      "The tables are being cleaned.",
+      "A waiter is serving some food.",
+      "The café is closed for the day."
+    ], answer: 2,
+    expl: "Le serveur SERT des plats (« is serving »). Payer, nettoyer ou fermer ne correspondent pas à la scène décrite." }
+];
+
 const TOEIC_PART6 = [
   {
     title: "Texte 1 — E-mail interne",

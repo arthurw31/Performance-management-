@@ -104,6 +104,7 @@ const ROUTES = {
   'plan': renderPlan,
   'tagemage': renderTageMage,
   'toeic': renderToeic,
+  'methode': renderMethode,
   'stats': renderStats
 };
 
@@ -266,7 +267,7 @@ function renderPlan() {
 function renderTageMage() {
   app().innerHTML = `
     <h1>Tage Mage</h1>
-    <p class="sub">Barème officiel 2025 : <strong>+4</strong> par bonne réponse, <strong>0</strong> pour une erreur ou une absence de réponse (plus de points négatifs depuis janvier 2025). 90 questions en 2h le jour J, sans calculatrice — ici 80 s/question.</p>
+    <p class="sub">Barème officiel 2025 : <strong>+4</strong> par bonne réponse, <strong>0</strong> pour une erreur ou une absence de réponse (plus de points négatifs depuis janvier 2025). 90 questions en 2h le jour J, sans calculatrice.</p>
     <div class="card" style="border-color:var(--accent);padding:12px 16px;margin-bottom:14px">
       💡 <strong>Stratégie clé :</strong> comme une erreur ne coûte rien de plus qu'un blanc, <strong>réponds à toutes les questions</strong>, même en dernière seconde. Ne laisse jamais une case vide.
     </div>
@@ -274,47 +275,96 @@ function renderTageMage() {
       ${TM_SUBTESTS.map(s => {
         const hist = DB.sessions.filter(x => x.cat === 'tm' && x.module === s.id);
         const best = hist.length ? Math.max(...hist.map(h => Math.round(100 * h.score / h.total))) : null;
+        const n = Math.min(15, s.questions.length);
         return `<div class="card">
           <h3>${s.icon} ${s.name}</h3>
           <p class="desc">${esc(s.desc)}</p>
           <div class="pill-row">
-            <span class="badge">${s.questions.length} questions</span>
-            <span class="badge">${Math.round(s.questions.length * 80 / 60)} min</span>
+            <span class="badge">${n} questions · 20 min</span>
+            <span class="badge">banque de ${s.questions.length}</span>
             ${best !== null ? `<span class="badge">Record : ${best}%</span>` : ''}
           </div>
           <button class="btn small" onclick="startTMSubtest('${s.id}')">Lancer la série</button>
+          <a class="btn small secondary" href="#/methode/${s.id}">📘 Méthode</a>
         </div>`;
       }).join('')}
       <div class="card" style="border-color:var(--series-tm)">
-        <h3>🏁 Test blanc express</h3>
-        <p class="desc">3 questions tirées au sort dans chacun des 6 sous-tests, en conditions réelles (chrono strict, score /600 estimé).</p>
-        <div class="pill-row"><span class="badge">18 questions</span><span class="badge">24 min</span></div>
+        <h3>🏁 Test blanc complet — conditions réelles</h3>
+        <p class="desc">Comme le jour J : 6 sous-tests de 15 questions (90 au total), 2 heures, score estimé /600. Prévois un créneau au calme.</p>
+        <div class="pill-row"><span class="badge">90 questions</span><span class="badge">2 h</span></div>
         <button class="btn small" onclick="startTMMock()">Lancer le test blanc</button>
+      </div>
+      <div class="card">
+        <h3>⚡ Test blanc express</h3>
+        <p class="desc">3 questions tirées au sort dans chacun des 6 sous-tests — idéal pour une session courte.</p>
+        <div class="pill-row"><span class="badge">18 questions</span><span class="badge">24 min</span></div>
+        <button class="btn small" onclick="startTMExpress()">Lancer l'express</button>
       </div>
     </div>`;
 }
 
+// Tire n questions au hasard dans une banque (sans modifier l'originale).
+function drawRandom(list, n) {
+  return [...list].sort(() => Math.random() - 0.5).slice(0, Math.min(n, list.length));
+}
+
 function startTMSubtest(id) {
   const s = TM_SUBTESTS.find(x => x.id === id);
+  const pool = drawRandom(s.questions, 15); // format réel : 15 questions / 20 min
   startQuiz({
     cat: 'tm', module: id, label: `Tage Mage · ${s.name}`,
-    questions: s.questions.map(q => ({ ...q, subtest: id })),
-    seconds: s.questions.length * 80,
+    questions: pool.map(q => ({ ...q, subtest: id })),
+    seconds: pool.length * 80,
     letters: 'ABCDE', tmScore: true,
     intro: s.conditionsMode ? s.desc : null
   });
 }
 
 function startTMMock() {
+  // Test blanc complet : 15 questions par sous-test, 2 h, comme au vrai Tage Mage.
   const qs = [];
   TM_SUBTESTS.forEach(s => {
-    const pool = [...s.questions].sort(() => Math.random() - 0.5).slice(0, 3);
-    pool.forEach(q => qs.push({ ...q, subtest: s.id, section: s.name }));
+    drawRandom(s.questions, 15).forEach(q => qs.push({ ...q, subtest: s.id, section: s.name }));
+  });
+  startQuiz({
+    cat: 'tm', module: 'mock', label: 'Tage Mage · Test blanc complet',
+    questions: qs, seconds: 7200, letters: 'ABCDE', tmScore: true
+  });
+}
+
+function startTMExpress() {
+  const qs = [];
+  TM_SUBTESTS.forEach(s => {
+    drawRandom(s.questions, 3).forEach(q => qs.push({ ...q, subtest: s.id, section: s.name }));
   });
   startQuiz({
     cat: 'tm', module: 'mock', label: 'Tage Mage · Test blanc express',
     questions: qs, seconds: qs.length * 80, letters: 'ABCDE', tmScore: true
   });
+}
+
+/* ============================== Fiches méthode ============================== */
+
+function renderMethode() {
+  const id = location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[1];
+  const m = (typeof METHOD_SHEETS !== 'undefined') ? METHOD_SHEETS[id] : null;
+  if (!m) { location.hash = '#/tagemage'; return; }
+  const isTM = m.back === 'tagemage';
+  app().innerHTML = `
+    <div class="quiz-shell">
+      <h1>${m.icon} ${esc(m.title)}</h1>
+      <p class="sub">${esc(m.intro)}</p>
+      ${m.sections.map(sec => `<div class="card">
+        <h3>${esc(sec.h)}</h3>
+        <ul style="margin:8px 0 0;padding-left:24px;line-height:1.7">
+          ${sec.items.map(it => `<li style="margin:8px 0">${it}</li>`).join('')}
+        </ul>
+      </div>`).join('')}
+      <div class="quiz-nav">
+        ${isTM ? `<button class="btn" onclick="startTMSubtest('${id}')">S'entraîner maintenant →</button>` : `<a class="btn" href="#/toeic">S'entraîner maintenant →</a>`}
+        <a class="btn secondary" href="#/${m.back}">Retour</a>
+      </div>
+    </div>`;
 }
 
 /* ============================== TOEIC ============================== */
@@ -340,7 +390,26 @@ function renderToeic() {
       </table></div>
       <p class="desc" style="margin:10px 0 0">Cette plateforme t'entraîne sur les parties les plus rentables à réviser : vocabulaire (transversal), grammaire (Part 5/6), lecture (Part 7) et écoute (Part 2). Astuce vérifiée : en Reading, si deux réponses sont synonymes, élimine-les — il ne peut y avoir qu'une bonne réponse.</p>
     </details>
+    <div class="card" style="border-color:var(--series-toeic)">
+      <h3>🏁 Mini test blanc Reading — chronométré</h3>
+      <p class="desc">Part 5 (20 q) + Part 6 (3 q) + Part 7 (4 q) mélangées, 45 secondes par question comme le jour J, avec score Reading estimé /495.</p>
+      <div class="pill-row"><span class="badge">27 questions</span><span class="badge">~20 min</span></div>
+      <button class="btn small" onclick="startToeicMock()">Lancer le test blanc</button>
+    </div>
+    <h2>📘 Fiches méthode</h2>
+    <div class="grid3">
+      <div class="card"><h3>📝 Grammaire (Part 5-6)</h3><p class="desc">Les 5 types de questions et le bon réflexe pour chacun.</p><a class="btn small secondary" href="#/methode/toeic-part5">Lire la fiche</a></div>
+      <div class="card"><h3>🎧 Listening (Parts 1-4)</h3><p class="desc">Quoi écouter avant même que l'audio commence.</p><a class="btn small secondary" href="#/methode/toeic-listening">Lire la fiche</a></div>
+      <div class="card"><h3>📄 Lecture (Part 7)</h3><p class="desc">La méthode « questions d'abord » et le timing.</p><a class="btn small secondary" href="#/methode/toeic-reading">Lire la fiche</a></div>
+    </div>
+    <h2>Entraînements</h2>
     <div class="grid2">
+      <div class="card">
+        <h3>🖼️ Listening — Part 1 (photos)</h3>
+        <p class="desc">Une scène est décrite (la « photo »), puis 4 phrases sont lues en anglais — choisis celle qui décrit le mieux l'image, sans texte affiché.</p>
+        <div class="pill-row"><span class="badge">${TOEIC_PART1.length} photos</span><span class="badge">~5 min</span></div>
+        <button class="btn small" onclick="startToeicPart1()">Lancer la série</button>
+      </div>
       <div class="card">
         <h3>🃏 Vocabulaire — flashcards</h3>
         <p class="desc">Répétition espacée : les mots reviennent au bon moment pour être mémorisés durablement. À faire chaque jour, même 5 minutes.</p>
@@ -350,7 +419,7 @@ function renderToeic() {
       <div class="card">
         <h3>📝 Grammaire — Part 5</h3>
         <p class="desc">Phrases à compléter, 30 secondes par question comme le jour J. Chaque erreur est expliquée.</p>
-        <div class="pill-row"><span class="badge">${TOEIC_GRAMMAR.length} questions</span><span class="badge">10 min</span>${gBest !== null ? `<span class="badge">Record : ${gBest}%</span>` : ''}</div>
+        <div class="pill-row"><span class="badge">20 questions · 10 min</span><span class="badge">banque de ${TOEIC_GRAMMAR.length}</span>${gBest !== null ? `<span class="badge">Record : ${gBest}%</span>` : ''}</div>
         <button class="btn small" onclick="startToeicGrammar()">Lancer la série</button>
       </div>
       <div class="card">
@@ -383,9 +452,10 @@ function renderToeic() {
 }
 
 function startToeicGrammar() {
+  const pool = drawRandom(TOEIC_GRAMMAR, 20); // 30 s/question, comme au vrai TOEIC
   startQuiz({
     cat: 'toeic', module: 'grammar', label: 'TOEIC · Grammaire (Part 5)',
-    questions: TOEIC_GRAMMAR, seconds: TOEIC_GRAMMAR.length * 30, letters: 'ABCD', tmScore: false
+    questions: pool, seconds: pool.length * 30, letters: 'ABCD', tmScore: false
   });
 }
 
@@ -427,9 +497,34 @@ function startToeicPart6(i) {
   });
 }
 
+function startToeicMock() {
+  // Mini test blanc Reading : Part 5 + Part 6 + Part 7, 45 s/question.
+  const p6 = TOEIC_PART6[Math.floor(Math.random() * TOEIC_PART6.length)];
+  const p7 = TOEIC_READING[Math.floor(Math.random() * TOEIC_READING.length)];
+  const qs = [
+    ...drawRandom(TOEIC_GRAMMAR, 20).map(q => ({ ...q, section: 'Part 5' })),
+    ...p6.questions.map(q => ({ ...q, passageText: p6.passage, section: 'Part 6' })),
+    ...p7.questions.map(q => ({ ...q, passageText: p7.passage, section: 'Part 7' }))
+  ];
+  startQuiz({
+    cat: 'toeic', module: 'mock', label: 'TOEIC · Mini test blanc Reading',
+    questions: qs, seconds: qs.length * 45, letters: 'ABCD', toeicScore: true
+  });
+}
+
 /* ============================== Quiz engine ============================== */
 
+// Mélange l'ordre des choix d'une question (et déplace l'index de la bonne
+// réponse) pour éviter tout biais de position. Les Conditions minimales sont
+// exclues : leurs réponses A-E ont un sens fixe.
+function shuffleChoices(q) {
+  if (q.subtest === 'conditions') return q;
+  const order = q.choices.map((_, i) => i).sort(() => Math.random() - 0.5);
+  return { ...q, choices: order.map(i => q.choices[i]), answer: order.indexOf(q.answer) };
+}
+
 function startQuiz(cfg) {
+  cfg.questions = cfg.questions.map(shuffleChoices);
   activeQuiz = {
     ...cfg,
     idx: 0,
@@ -558,6 +653,10 @@ function finishQuiz() {
     const raw = good * 4;
     const est = Math.round(600 * raw / (qz.questions.length * 4));
     tmScoreHtml = `<div class="tile"><div class="label">Score Tage Mage estimé (barème 2025 : +4 / 0)</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 600</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
+  }
+  if (qz.toeicScore) {
+    const est = Math.round(pct * 495 / 100 / 5) * 5;
+    tmScoreHtml = `<div class="tile"><div class="label">Score Reading estimé</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 495</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
   }
 
   app().innerHTML = `
@@ -779,6 +878,90 @@ function nextListening() {
   listenSession.idx += 1;
   listenSession.answered = false;
   renderListening();
+}
+
+/* ============================== Listening Part 1 (photos) ============================== */
+
+let p1Session = null;
+
+function startToeicPart1() {
+  if (!('speechSynthesis' in window)) {
+    alert("Ton navigateur ne prend pas en charge la synthèse vocale. Essaie Chrome, Edge ou Safari.");
+    return;
+  }
+  p1Session = { idx: 0, score: 0, answered: false };
+  renderPart1();
+}
+
+function renderPart1() {
+  const s = p1Session;
+  if (s.idx >= TOEIC_PART1.length) {
+    const pct = Math.round(100 * s.score / TOEIC_PART1.length);
+    DB.sessions.push({ d: new Date().toISOString(), cat: 'toeic', module: 'part1', label: 'TOEIC · Listening (Part 1)', score: s.score, total: TOEIC_PART1.length });
+    saveStore();
+    app().innerHTML = `<h1>Part 1 — résultats</h1>
+      <div class="tiles">
+        <div class="tile"><div class="label">Score</div><div class="value">${s.score}/${TOEIC_PART1.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}%</div></div>
+      </div>
+      <a class="btn" href="#/toeic">Retour au TOEIC</a> <a class="btn secondary" href="#/stats">Voir ma progression</a>`;
+    p1Session = null;
+    return;
+  }
+  const item = TOEIC_PART1[s.idx];
+  app().innerHTML = `
+    <div class="quiz-shell">
+    <div class="quiz-head">
+      <div><strong>TOEIC · Listening Part 1 — Photos</strong><div class="qcount">Photo ${s.idx + 1} / ${TOEIC_PART1.length} — Score : ${s.score}</div></div>
+      <a class="btn small secondary" href="#/toeic">Quitter</a>
+    </div>
+    <div class="card" style="border:2px dashed var(--baseline);background:var(--accent-soft)">
+      <div style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px">🖼️ LA PHOTO MONTRE :</div>
+      <div style="font-size:19px;font-style:italic">${esc(item.scene)}</div>
+    </div>
+    <div class="card listen-box">
+      <button class="bigplay" onclick="playPart1Item()">▶ Écouter les 4 phrases</button>
+      <p class="desc" style="margin-top:12px">Choisis la phrase (A, B, C ou D) qui décrit le mieux la photo — les phrases ne sont pas affichées, comme au vrai TOEIC.</p>
+      <div class="abc" id="abc">
+        ${['A', 'B', 'C', 'D'].map((L, i) => `<button id="abc-${i}" onclick="answerPart1(${i})" ${s.answered ? 'disabled' : ''}>${L}</button>`).join('')}
+      </div>
+      <div id="p1-feedback" class="transcript"></div>
+    </div>
+    </div>`;
+  if (!s.answered) setTimeout(playPart1Item, 400);
+}
+
+function playPart1Item() {
+  const item = TOEIC_PART1[p1Session.idx];
+  speak(['A.', item.statements[0], 'B.', item.statements[1], 'C.', item.statements[2], 'D.', item.statements[3]]);
+}
+
+function answerPart1(i) {
+  const s = p1Session;
+  if (s.answered) return;
+  s.answered = true;
+  speechSynthesis.cancel();
+  const item = TOEIC_PART1[s.idx];
+  const ok = i === item.answer;
+  if (ok) s.score += 1;
+  document.getElementById('abc-' + item.answer).classList.add('correct');
+  if (!ok) document.getElementById('abc-' + i).classList.add('wrong');
+  document.querySelectorAll('#abc button').forEach(b => b.disabled = true);
+  document.getElementById('p1-feedback').innerHTML = `
+    <div class="verdict ${ok ? 'ok' : 'ko'}" style="margin-bottom:8px">${ok ? '✓ Correct !' : '✗ Incorrect'}</div>
+    <div class="expl">
+      <strong>Transcription</strong><br>
+      ${item.statements.map((st, j) => `${'ABCD'[j]}. ${esc(st)} ${j === item.answer ? '✓' : ''}`).join('<br>')}
+      <br><br>💡 ${esc(item.expl)}
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn" onclick="nextPart1()">Suivant →</button>
+    </div>`;
+}
+
+function nextPart1() {
+  p1Session.idx += 1;
+  p1Session.answered = false;
+  renderPart1();
 }
 
 /* ============================== Stats & charts ============================== */
