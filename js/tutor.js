@@ -11,6 +11,7 @@ Règles :
 - Sois concis : moins de 250 mots par réponse, va à l'essentiel.
 - Quand c'est utile, termine par un mini-exercice similaire pour vérifier que l'élève a compris (et donne la réponse en fin de message, à l'envers ou après un espace).
 - Si l'élève envoie le contexte d'une question de la plateforme, appuie-toi dessus.
+- Si le message contient un bloc [CONTEXTE AUTO — EXERCICE EN COURS], l'élève est en train de faire l'exercice : guide-le pas à pas SANS révéler la lettre de la bonne réponse, sauf s'il la demande explicitement. S'il a déjà répondu ou si le contexte vient d'une correction ([QUESTION DE LA PLATEFORME]), explique tout, réponse comprise.
 - Encourage sans flatter : ton objectif est la progression.`;
 
 /* Fournisseurs supportés.
@@ -97,6 +98,7 @@ function tutorInit() {
       </span>
     </div>
     <div class="tutor-msgs" id="tutor-msgs"></div>
+    <div id="tutor-ctx" style="display:none;padding:7px 16px;font-size:13.5px;color:var(--accent-strong);background:var(--accent-soft);border-top:1px solid var(--grid)"></div>
     <div class="tutor-input">
       <textarea id="tutor-text" rows="2" placeholder="Explique-moi cette notion, pourquoi cette réponse…"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tutorSend();}"></textarea>
@@ -132,7 +134,17 @@ function tutorMd(s) {
   return h;
 }
 
+// Bandeau « exercice joint » au-dessus du champ de saisie.
+function updateTutorCtxBanner() {
+  const el = document.getElementById('tutor-ctx');
+  if (!el) return;
+  const ctx = tutorCurrentContext();
+  el.style.display = ctx ? 'block' : 'none';
+  if (ctx) el.textContent = '📎 Exercice en cours joint automatiquement — pose simplement ta question.';
+}
+
 function renderTutorMessages() {
+  updateTutorCtxBanner();
   const box = document.getElementById('tutor-msgs');
   if (!box) return;
 
@@ -167,13 +179,72 @@ function renderTutorMessages() {
   box.scrollTop = box.scrollHeight;
 }
 
-// Les messages utilisateur issus d'un bouton "Demander au tuteur" contiennent
-// un gros bloc de contexte ; on n'affiche que la partie lisible.
+// Les messages utilisateur contenant un bloc de contexte (bouton « Demander
+// au tuteur » ou contexte auto de l'exercice en cours) n'affichent que la
+// partie lisible — le contexte part à l'API mais n'encombre pas le chat.
 function displayText(content) {
+  const autoMarker = content.indexOf("[QUESTION DE L'ÉLÈVE]");
+  if (autoMarker !== -1) {
+    return `📎 ${content.slice(autoMarker + "[QUESTION DE L'ÉLÈVE]".length).trim()}`;
+  }
   const marker = content.indexOf('[QUESTION DE LA PLATEFORME]');
   if (marker === -1) return content;
   const q = content.match(/Question : ([\s\S]*?)\n/);
   return `🎓 À propos de : « ${q ? q[1].slice(0, 90) : 'une question de la série'}… » — explique-moi.`;
+}
+
+/* ---------- Contexte automatique de l'exercice en cours ---------- */
+
+// Décrit l'exercice actuellement affiché (quiz, flashcard, listening, Part 1)
+// pour le joindre automatiquement aux questions posées au tuteur.
+function tutorCurrentContext() {
+  // Série / test blanc en cours (moteur de quiz)
+  if (typeof activeQuiz !== 'undefined' && activeQuiz && !activeQuiz.finished) {
+    const qz = activeQuiz;
+    const q = qz.questions[qz.idx];
+    if (!q) return null;
+    const passage = q.passageText || (q.passage ? TM_PASSAGES[q.passage] : null);
+    const my = qz.answers[qz.idx];
+    return [
+      `Épreuve : ${qz.label} — question ${qz.idx + 1}/${qz.questions.length}`,
+      passage ? `Texte support : ${passage.slice(0, 800)}` : null,
+      `Question : ${q.text}`,
+      `Choix : ${q.choices.map((c, j) => `${qz.letters[j]}. ${c}`).join(' | ')}`,
+      `Bonne réponse (ne pas révéler d'emblée) : ${qz.letters[q.answer]}`,
+      `Explication officielle : ${q.expl}`,
+      (my !== null && my !== undefined) ? `Réponse actuellement cochée par l'élève : ${qz.letters[my]}` : "L'élève n'a pas encore répondu."
+    ].filter(Boolean).join('\n');
+  }
+  // Flashcard de vocabulaire
+  if (typeof fcSession !== 'undefined' && fcSession && fcSession.pos < fcSession.queue.length) {
+    const c = TOEIC_VOCAB[fcSession.queue[fcSession.pos]];
+    if (c) return `Flashcard TOEIC en cours : mot « ${c.w} » (${c.pos}) = ${c.fr}. Exemple : ${c.ex}`;
+  }
+  // Listening Part 2
+  if (typeof listenSession !== 'undefined' && listenSession && listenSession.idx < TOEIC_LISTENING.length) {
+    const it = TOEIC_LISTENING[listenSession.idx];
+    return [
+      `Épreuve : TOEIC Listening Part 2 — item ${listenSession.idx + 1}/${TOEIC_LISTENING.length}`,
+      `Question entendue : ${it.q}`,
+      `Réponses : ${it.r.map((r, j) => `${'ABC'[j]}. ${r}`).join(' | ')}`,
+      `Bonne réponse (ne pas révéler d'emblée) : ${'ABC'[it.answer]}`,
+      `Explication officielle : ${it.expl}`,
+      listenSession.answered ? "L'élève a déjà répondu, la correction est affichée." : "L'élève n'a pas encore répondu."
+    ].join('\n');
+  }
+  // Listening Part 1 (photos)
+  if (typeof p1Session !== 'undefined' && p1Session && p1Session.idx < TOEIC_PART1.length) {
+    const it = TOEIC_PART1[p1Session.idx];
+    return [
+      `Épreuve : TOEIC Listening Part 1 (photo) — item ${p1Session.idx + 1}/${TOEIC_PART1.length}`,
+      `Description de la photo : ${it.scene}`,
+      `Phrases entendues : ${it.statements.map((s, j) => `${'ABCD'[j]}. ${s}`).join(' | ')}`,
+      `Bonne réponse (ne pas révéler d'emblée) : ${'ABCD'[it.answer]}`,
+      `Explication officielle : ${it.expl}`,
+      p1Session.answered ? "L'élève a déjà répondu, la correction est affichée." : "L'élève n'a pas encore répondu."
+    ].join('\n');
+  }
+  return null;
 }
 
 /* ---------- Appel API ---------- */
@@ -280,9 +351,16 @@ async function tutorSend(prefilled) {
     return;
   }
   const input = document.getElementById('tutor-text');
-  const text = prefilled !== undefined ? prefilled : (input ? input.value.trim() : '');
+  let text = prefilled !== undefined ? prefilled : (input ? input.value.trim() : '');
   if (!text) return;
   if (input && prefilled === undefined) input.value = '';
+
+  // Question tapée pendant un exercice : on joint automatiquement le contexte
+  // (question, choix, texte support) pour que l'élève n'ait rien à recopier.
+  if (prefilled === undefined) {
+    const ctx = tutorCurrentContext();
+    if (ctx) text = `[CONTEXTE AUTO — EXERCICE EN COURS]\n${ctx}\n\n[QUESTION DE L'ÉLÈVE]\n${text}`;
+  }
 
   tutorState.messages.push({ role: 'user', content: text });
   tutorState.busy = true;

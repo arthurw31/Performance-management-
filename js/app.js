@@ -112,6 +112,8 @@ let activeQuiz = null; // guards timer cleanup on navigation
 
 function navigate() {
   if (activeQuiz) { clearInterval(activeQuiz.timerId); activeQuiz = null; }
+  // Oublie les sessions en cours pour que le tuteur ne joigne pas un vieil exercice.
+  fcSession = null; listenSession = null; p1Session = null;
   window.speechSynthesis && speechSynthesis.cancel();
   const h = location.hash.replace(/^#\/?/, '').split('?')[0];
   const [route] = h.split('/');
