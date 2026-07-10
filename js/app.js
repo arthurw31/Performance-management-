@@ -943,12 +943,6 @@ function openSettings() {
       <input type="date" id="set-exam" value="${DB.settings.examDate}">
       <label>Nouveaux mots de vocabulaire par jour</label>
       <input type="number" id="set-new" min="1" max="40" value="${DB.settings.newPerDay}">
-      <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
-      <label>🎓 Fournisseur du tuteur IA</label>
-      <select id="set-provider" onchange="providerChanged()">
-        ${Object.entries(TUTOR_PROVIDERS).map(([id, p]) => `<option value="${id}" ${(DB.settings.provider || 'managed') === id ? 'selected' : ''}>${p.name}</option>`).join('')}
-      </select>
-      <div id="provider-fields">${providerFieldsHTML(DB.settings.provider || 'managed')}</div>
       <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
       <div class="actions">
         <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
@@ -964,30 +958,6 @@ function closeSettings() {
   if (m) m.remove();
 }
 
-// Champs de configuration selon le fournisseur : rien en mode intégré,
-// clé + modèle pour les fournisseurs externes.
-function providerFieldsHTML(id) {
-  const p = TUTOR_PROVIDERS[id] || TUTOR_PROVIDERS.managed;
-  if (p.format === 'managed') {
-    return `<p style="font-size:12px;color:var(--muted);margin:8px 0 0">
-      Rien à configurer : la clé API est gardée côté serveur, jamais dans le navigateur.
-      Il suffit d'être connecté (section ☁️ Synchro ci-dessous).</p>`;
-  }
-  return `
-    <label>Clé API</label>
-    <input type="password" id="set-apikey" placeholder="sk-..." value="${esc(DB.settings.apiKey || '')}" autocomplete="off">
-    <p style="font-size:11.5px;color:var(--muted);margin:4px 0 0">Crée une clé sur <a href="${p.keyUrl}" target="_blank" rel="noopener">${p.keyUrl.split('/')[2]}</a>.</p>
-    <label>Modèle</label>
-    <input type="text" id="set-model" list="model-suggestions" value="${esc(DB.settings.model || p.defaultModel)}">
-    <datalist id="model-suggestions">${p.models.map(m => `<option value="${m}">`).join('')}</datalist>`;
-}
-
-function providerChanged() {
-  const id = document.getElementById('set-provider').value;
-  document.getElementById('provider-fields').innerHTML = providerFieldsHTML(id);
-  const model = document.getElementById('set-model');
-  if (model) model.value = (TUTOR_PROVIDERS[id] || TUTOR_PROVIDERS.managed).defaultModel;
-}
 function saveSettings() {
   const start = document.getElementById('set-start').value;
   const exam = document.getElementById('set-exam').value;
@@ -1000,11 +970,8 @@ function saveSettings() {
     return;
   }
   if (n >= 1 && n <= 40) DB.settings.newPerDay = n;
-  DB.settings.provider = document.getElementById('set-provider').value;
-  const keyEl = document.getElementById('set-apikey');
-  if (keyEl) DB.settings.apiKey = keyEl.value.trim();
-  const modelEl = document.getElementById('set-model');
-  if (modelEl) DB.settings.model = modelEl.value.trim();
+  // Le tuteur IA est toujours en mode intégré : la clé API vit côté serveur.
+  DB.settings.provider = 'managed';
   if (typeof syncSaveProjectFields === 'function') syncSaveProjectFields();
   saveStore();
   if (typeof syncInit === 'function' && typeof syncState !== 'undefined' && !syncState.user) syncInit();

@@ -198,6 +198,14 @@ async function syncLogout() {
 
 /* ---------- UI ---------- */
 
+// Nom lisible de l'utilisateur : prénom/nom Google si dispo, sinon le début de l'email.
+function syncUserName() {
+  const u = syncState.user;
+  if (!u) return '';
+  const meta = u.user_metadata || {};
+  return meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Connecté');
+}
+
 function updateSyncBadge() {
   const b = document.getElementById('sync-badge');
   if (!b) return;
@@ -208,18 +216,24 @@ function updateSyncBadge() {
     b.title = 'Se connecter (Google ou email)';
     return;
   }
-  b.textContent = syncState.status === 'error' ? '⚠️' : '☁️';
+  // Connecté : avatar Google éventuel + nom, cliquable vers les réglages.
+  const meta = syncState.user.user_metadata || {};
+  const avatar = meta.avatar_url || meta.picture;
+  b.innerHTML = `<a href="javascript:openSettings()" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:var(--text-primary);font-weight:700;font-size:15px">
+    ${avatar ? `<img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" style="width:26px;height:26px;border-radius:50%;display:block">` : '☁️'}
+    <span>${esc(syncUserName())}</span>${syncState.status === 'error' ? ' ⚠️' : ''}
+  </a>`;
   b.title = syncState.status === 'error'
     ? 'Erreur de synchronisation'
-    : `Synchronisé (${syncState.user.email})${syncState.lastSync ? ' — ' + syncState.lastSync.toLocaleTimeString('fr-FR') : ''}`;
+    : `Connecté (${syncState.user.email})${syncState.lastSync ? ' — synchro ' + syncState.lastSync.toLocaleTimeString('fr-FR') : ''}`;
 }
 
 // Section « Synchro » de la modale de réglages (appelée par openSettings).
 function syncSettingsHTML() {
   const cfg = DB.settings || {};
   const authPart = syncState.user
-    ? `<p style="font-size:13px;margin:10px 0 4px">✅ Connecté : <strong>${esc(syncState.user.email)}</strong><br>
-         <span style="color:var(--muted);font-size:11.5px">Ta progression se sauvegarde automatiquement dans le cloud.</span></p>
+    ? `<p style="font-size:15px;margin:10px 0 8px">✅ Connecté : <strong>${esc(syncUserName())}</strong>
+         <span style="color:var(--muted)">(${esc(syncState.user.email)})</span></p>
        <button class="btn secondary small" onclick="syncLogout()">Se déconnecter</button>`
     : `<button class="btn small google-btn" onclick="syncLoginGoogle()">
          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -238,19 +252,13 @@ function syncSettingsHTML() {
        </details>`;
   return `
     <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
-    <label>☁️ Synchro multi-appareils</label>
-    <p style="font-size:11.5px;color:var(--muted);margin:2px 0 6px">
-      Crée un compte (ou connecte-toi) pour retrouver ta progression et ta clé API
-      du tuteur sur tous tes appareils. Gratuit, données protégées par ton mot de passe.</p>
+    <label>Compte</label>
+    ${syncState.user ? '' : `<p style="font-size:14px;color:var(--muted);margin:2px 0 10px">
+      Connecte-toi pour sauvegarder ta progression et utiliser le tuteur IA 🎓.</p>`}
     <div id="sync-auth-area">${authPart}</div>
-    <p id="sync-msg" style="font-size:12px;margin:8px 0 0"></p>
-    <details style="margin-top:10px">
-      <summary style="font-size:11.5px;color:var(--muted);cursor:pointer">Configuration avancée (autre projet Supabase)</summary>
-      <label>URL du projet</label>
-      <input type="text" id="set-sburl" placeholder="https://xxxx.supabase.co" value="${esc(cfg.sbUrl || '')}">
-      <label>Clé publique (anon / publishable)</label>
-      <input type="password" id="set-sbkey" placeholder="sb_publishable_… ou eyJ…" value="${esc(cfg.sbKey || '')}" autocomplete="off">
-    </details>`;
+    <p id="sync-msg" style="font-size:13px;margin:8px 0 0"></p>
+    <input type="hidden" id="set-sburl" value="${esc(cfg.sbUrl || '')}">
+    <input type="hidden" id="set-sbkey" value="${esc(cfg.sbKey || '')}">`;
 }
 
 function refreshSettingsSyncSection() {

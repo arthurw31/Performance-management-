@@ -38,16 +38,13 @@ Deno.serve(async (req) => {
       return json({ error: 'Connecte-toi (réglages ⚙️ → ☁️ Synchro) pour utiliser le tuteur.' }, 401);
     }
 
-    // 2. Configuration serveur (clé + liste blanche + modèle).
+    // 2. Configuration serveur (clé + modèle). Tout utilisateur connecté a
+    // accès au tuteur : la clé API du propriétaire sert à tous les comptes.
+    // (Garde-fou anti-abus : historique et tailles bornés à l'étape 3.)
     const { data: cfgRows, error: cfgErr } = await admin.from('app_config').select('key,value');
     if (cfgErr) return json({ error: 'Configuration serveur inaccessible.' }, 500);
     const cfg = Object.fromEntries((cfgRows ?? []).map((r) => [r.key, r.value]));
 
-    const allowed = (cfg.allowed_emails ?? '')
-      .split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
-    if (allowed.length && !allowed.includes((user.email ?? '').toLowerCase())) {
-      return json({ error: `Le compte ${user.email} n'est pas autorisé à utiliser le tuteur.` }, 403);
-    }
     if (!cfg.openrouter_api_key) {
       return json({ error: 'Clé OpenRouter non configurée côté serveur.' }, 500);
     }
@@ -68,7 +65,7 @@ Deno.serve(async (req) => {
       headers: {
         'content-type': 'application/json',
         'authorization': `Bearer ${cfg.openrouter_api_key}`,
-        'HTTP-Referer': 'https://arthurw31.github.io/plateforme-revision-tage-mage-toeic/',
+        'HTTP-Referer': 'https://plateforme-revision-tage-mage-toeic.vercel.app/',
         'X-Title': 'Prepa Tage Mage TOEIC'
       },
       body: JSON.stringify({
