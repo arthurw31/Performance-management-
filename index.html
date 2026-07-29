@@ -5,13 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prépa Tage Mage & TOEIC</title>
   <meta name="description" content="Plateforme de révision Tage Mage et TOEIC : séries chronométrées, flashcards à répétition espacée, listening audio, plan de révision et suivi de progression.">
-  <meta name="theme-color" content="#050505">
-  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#faf9f7">
+  <meta name="color-scheme" content="light dark">
+  <!-- Appliqué avant le premier rendu : évite le flash de thème au chargement. -->
+  <script>
+    try {
+      if (localStorage.getItem('tmtp.theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0b0b0d');
+      }
+    } catch (e) { /* stockage indisponible : on reste en clair */ }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@300;400;500&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=11">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237aa2ff' stroke-width='1.5'><circle cx='12' cy='12' r='8.5'/><circle cx='12' cy='12' r='4.2'/><circle cx='12' cy='12' r='1' fill='%237aa2ff'/></svg>">
+  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2333499e' stroke-width='1.5'><circle cx='12' cy='12' r='8.5'/><circle cx='12' cy='12' r='4.2'/><circle cx='12' cy='12' r='1' fill='%2333499e'/></svg>">
 </head>
 <body>
   <!-- Filtres de flou directionnel (vertical) pour le compteur à rouleaux -->
@@ -32,6 +41,7 @@
     <a class="navlink" href="#/stats">Progression</a>
     <span class="spacer"></span>
     <span id="sync-badge"></span>
+    <button class="iconbtn" onclick="themeToggle()" title="Passer en sombre" aria-label="Changer de thème" id="theme-btn"></button>
     <button class="iconbtn" onclick="openSettings()" title="Paramètres" aria-label="Paramètres" id="settings-btn"></button>
   </nav>
 

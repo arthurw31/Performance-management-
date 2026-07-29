@@ -651,6 +651,7 @@ function renderQuizQuestion() {
       <button class="bigplay" onclick="quizPlayAudio()">Écouter ${esc(qz.audioLabel || "l'enregistrement")}<span class="btn-ic">${ic('volume', 15)}</span></button>
       <p class="desc" style="margin:18px 0 0">Écoute puis réponds aux ${qz.questions.length} questions ci-dessous. Le texte n'est pas affiché, comme au vrai TOEIC.</p>
     </div>` : ''}
+    <div class="q-slide ${qz.dir || ''}" key="${qz.idx}">
     ${passage ? `<div class="passage">${esc(passage)}</div>` : ''}
     <div class="qtext">${esc(q.text)}</div>
     <div class="choices">
@@ -658,6 +659,7 @@ function renderQuizQuestion() {
         <button class="choice ${qz.answers[qz.idx] === i ? 'selected' : ''}" onclick="answerQuiz(${i})">
           <span class="key">${qz.letters[i]}</span><span>${esc(c)}</span>
         </button>`).join('')}
+    </div>
     </div>
     <div class="quiz-nav">
       <button class="btn secondary" onclick="moveQuiz(-1)" ${qz.idx === 0 ? 'disabled' : ''}>Précédent</button>
@@ -676,8 +678,17 @@ function answerQuiz(i) {
   if (activeQuiz.idx < activeQuiz.questions.length - 1) moveQuiz(1);
   else renderQuizQuestion();
 }
-function moveQuiz(d) { activeQuiz.idx = Math.min(activeQuiz.questions.length - 1, Math.max(0, activeQuiz.idx + d)); renderQuizQuestion(); }
-function jumpQuiz(i) { activeQuiz.idx = i; renderQuizQuestion(); }
+function moveQuiz(d) {
+  const next = Math.min(activeQuiz.questions.length - 1, Math.max(0, activeQuiz.idx + d));
+  activeQuiz.dir = next < activeQuiz.idx ? 'back' : '';
+  activeQuiz.idx = next;
+  renderQuizQuestion();
+}
+function jumpQuiz(i) {
+  activeQuiz.dir = i < activeQuiz.idx ? 'back' : '';
+  activeQuiz.idx = i;
+  renderQuizQuestion();
+}
 
 function finishQuiz() {
   const qz = activeQuiz;
@@ -1258,6 +1269,7 @@ new MutationObserver(() => motionInit()).observe(document.getElementById('app'),
 document.getElementById('brand').innerHTML =
   `${ic('target', 17)}<span>Prépa <span class="tm">Tage&nbsp;Mage</span> · <span class="to">TOEIC</span></span>`;
 document.getElementById('settings-btn').innerHTML = ic('gear', 17);
+themeApply(themeCurrent());
 
 window.addEventListener('hashchange', navigate);
 window.addEventListener('resize', () => {

@@ -117,7 +117,10 @@ async function syncPushNow() {
     updated_at: new Date().toISOString()
   });
   syncState.status = error ? 'error' : 'idle';
-  if (!error) syncState.lastSync = new Date();
+  if (!error) {
+    syncState.lastSync = new Date();
+    if (typeof toast === 'function') toast('Progression sauvegardée');
+  }
   updateSyncBadge();
 }
 

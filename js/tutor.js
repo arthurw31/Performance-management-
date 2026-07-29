@@ -175,7 +175,7 @@ function renderTutorMessages() {
 
   box.innerHTML = tutorState.messages.map(m => `
     <div class="tutor-msg ${m.role}">${m.role === 'user' ? esc(displayText(m.content)) : tutorMd(m.content)}</div>
-  `).join('') + (tutorState.busy ? `<div class="tutor-msg assistant typing">Le tuteur réfléchit…</div>` : '');
+  `).join('') + (tutorState.busy ? `<div class="tutor-msg assistant typing"><span class="t-shimmer" data-text="Le tuteur réfléchit…">Le tuteur réfléchit…</span></div>` : '');
   box.scrollTop = box.scrollHeight;
 }
 

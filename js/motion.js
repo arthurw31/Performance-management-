@@ -127,3 +127,50 @@ function navPillSync() {
 }
 
 window.addEventListener('resize', navPillSync);
+
+/* ---------- Bascule de thème (clair par défaut, choix mémorisé) ---------- */
+
+function themeCurrent() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function themeApply(mode) {
+  if (mode === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', mode === 'dark' ? '#0b0b0d' : '#faf9f7');
+  const btn = document.getElementById('theme-btn');
+  if (btn) {
+    btn.innerHTML = ic(mode === 'dark' ? 'sun' : 'moon', 17);
+    btn.title = mode === 'dark' ? 'Passer en clair' : 'Passer en sombre';
+  }
+}
+
+function themeToggle() {
+  const next = themeCurrent() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('tmtp.theme', next); } catch (_) { /* mode privé */ }
+  const btn = document.getElementById('theme-btn');
+  // Permutation d'icône : on la fait disparaître en pivotant avant de la remplacer.
+  if (btn && !MOTION_REDUCE.matches) {
+    btn.classList.add('swapping');
+    setTimeout(() => { themeApply(next); btn.classList.remove('swapping'); }, 160);
+  } else {
+    themeApply(next);
+  }
+}
+
+/* ---------- 22. Toast ---------- */
+
+let toastTimer = null;
+function toast(message) {
+  let el = document.querySelector('.t-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 't-toast';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `${ic('check', 15)}<span>${message}</span>`;
+  requestAnimationFrame(() => el.classList.add('is-open'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-open'), 2600);
+}
