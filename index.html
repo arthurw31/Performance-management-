@@ -10,11 +10,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@300;400;500&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237aa2ff' stroke-width='1.5'><circle cx='12' cy='12' r='8.5'/><circle cx='12' cy='12' r='4.2'/><circle cx='12' cy='12' r='1' fill='%237aa2ff'/></svg>">
 </head>
 <body>
+  <!-- Filtres de flou directionnel (vertical) pour le compteur à rouleaux -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="reel-blur-0"><feGaussianBlur stdDeviation="0 3"/></filter>
+    <filter id="reel-blur-1"><feGaussianBlur stdDeviation="0 3"/></filter>
+    <filter id="reel-blur-2"><feGaussianBlur stdDeviation="0 3"/></filter>
+    <filter id="reel-blur-3"><feGaussianBlur stdDeviation="0 3"/></filter>
+  </svg>
+
   <nav class="topbar">
+    <span class="nav-pill" id="nav-pill"></span>
     <span class="brand" id="brand"></span>
     <a class="navlink" href="#/dashboard">Accueil</a>
     <a class="navlink" href="#/plan">Plan</a>
@@ -29,6 +38,7 @@
   <main id="app"></main>
 
   <script src="js/icons.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/data-tagemage.js"></script>
   <script src="js/data-toeic.js"></script>
   <script src="js/data-toeic-extra.js"></script>

@@ -121,6 +121,7 @@ function navigate() {
   document.querySelectorAll('.navlink').forEach(a => {
     a.classList.toggle('active', a.getAttribute('href') === '#/' + (route || 'dashboard'));
   });
+  if (typeof navPillSync === 'function') requestAnimationFrame(navPillSync);
   window.scrollTo(0, 0);
 }
 
@@ -168,7 +169,7 @@ function renderDashboard() {
             &nbsp;·&nbsp; <a href="javascript:openSettings()">Modifier la date</a></p>
         </div>
         <div class="hero-count">
-          <div class="n">${daysLeft}</div>
+          <div class="n"><span class="t-reel" id="hero-reel">${daysLeft}</span></div>
           <div class="c">jour${daysLeft > 1 ? 's' : ''} restants</div>
         </div>
       </div>
@@ -187,9 +188,8 @@ function renderDashboard() {
         <h3>Session du jour</h3>
         ${today ? `<div class="pill-row"><span class="badge">${today.type === 'tm' ? 'Tage Mage' : today.type === 'toeic' ? 'TOEIC' : 'Repos actif'}</span><span class="badge">${PHASE_NAMES[today.phase]}</span></div>` : ''}
         ${today ? today.tasks.map((t, i) => {
-          const done = (DB.plan[today.date] || [])[i];
-          return `<label class="task-check ${done ? 'done' : ''}">
-            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleTask('${today.date}',${i},this.checked);renderDashboard()"><span>${esc(t)}</span></label>`;
+          const done = !!(DB.plan[today.date] || [])[i];
+          return taskCheck(t, done, `toggleTask('${today.date}',${i},${!done});renderDashboard()`);
         }).join('') : `<p class="desc">Le plan est terminé — c'est le jour J (ou après). Bonne chance.</p>`}
       </div>
       <div class="card b-5 reveal">
@@ -219,11 +219,27 @@ function renderDashboard() {
 
     <h2>Accès rapide</h2>
     <div class="grid4">
-      <div class="card qc blue reveal" onclick="location.hash='#/tagemage'"><div class="chip">${ic('cpu', 22)}</div><h3>Tage Mage</h3><p class="desc">Six sous-tests, séries chronométrées au format réel et corrections détaillées.</p>${cta("S'entraîner", '#/tagemage', 'small')}</div>
-      <div class="card qc green reveal" onclick="location.hash='#/toeic'"><div class="chip">${ic('globe', 22)}</div><h3>TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio des sept parties.</p>${cta("S'entraîner", '#/toeic', 'small')}</div>
-      <div class="card qc orange reveal" onclick="location.hash='#/plan'"><div class="chip">${ic('flag', 22)}</div><h3>Plan de révision</h3><p class="desc">Programme jour par jour jusqu'à l'examen, en trois phases.</p>${cta('Voir le plan', '#/plan', 'small')}</div>
-      <div class="card qc violet reveal" onclick="location.hash='#/stats'"><div class="chip">${ic('chart', 22)}</div><h3>Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p>${cta('Voir les stats', '#/stats', 'small')}</div>
+      ${tiltCard(`<div class="chip">${ic('cpu', 22)}</div><h3>Tage Mage</h3><p class="desc">Six sous-tests, séries chronométrées au format réel et corrections détaillées.</p>${cta("S'entraîner", '#/tagemage', 'small')}`, 'qc blue')}
+      ${tiltCard(`<div class="chip">${ic('globe', 22)}</div><h3>TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio des sept parties.</p>${cta("S'entraîner", '#/toeic', 'small')}`, 'qc green')}
+      ${tiltCard(`<div class="chip">${ic('flag', 22)}</div><h3>Plan de révision</h3><p class="desc">Programme jour par jour jusqu'à l'examen, en trois phases.</p>${cta('Voir le plan', '#/plan', 'small')}`, 'qc orange')}
+      ${tiltCard(`<div class="chip">${ic('chart', 22)}</div><h3>Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p>${cta('Voir les stats', '#/stats', 'small')}`, 'qc violet')}
     </div>`;
+}
+
+// Case à cocher dont la coche se dessine au tracé (transition 25).
+function taskCheck(label, done, onclick) {
+  return `<button class="task-check" role="checkbox" aria-checked="${done}" onclick="${onclick}">
+    <span class="t-check"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.4l3.1 3.1 6.5-6.9"/></svg></span>
+    <span class="task-label">${esc(label)}</span>
+  </button>`;
+}
+
+// Carte qui s'incline en 3D vers le pointeur, avec reflet suivi (transition 19).
+// Le wrapper .t-tilt reste plat : c'est lui qui capte le pointeur.
+function tiltCard(inner, cls = '', onclick = '') {
+  return `<div class="t-tilt reveal"${onclick ? ` onclick="${onclick}"` : ''}>
+    <div class="card t-tilt-card ${cls}">${inner}<div class="t-tilt-glare"></div></div>
+  </div>`;
 }
 
 // CTA avec icône imbriquée dans son propre cercle (jamais de flèche nue).
@@ -1223,8 +1239,20 @@ function revealInit() {
     revealObserver.observe(el);
   });
 }
+
+// Après chaque rendu : révélations, tilt 3D, rouleaux du compteur, pilule de nav.
+function motionInit() {
+  revealInit();
+  if (typeof tiltInit === 'function') tiltInit(document.getElementById('app'));
+  const reel = document.getElementById('hero-reel');
+  if (reel && typeof reelRender === 'function' && !reel.dataset.spun) {
+    reel.dataset.spun = '1';
+    reelRender(reel, reel.textContent.trim());
+  }
+  if (typeof navPillSync === 'function') requestAnimationFrame(navPillSync);
+}
 // Le contenu de #app est remplacé à chaque rendu : on ré-arme après chaque mutation.
-new MutationObserver(() => revealInit()).observe(document.getElementById('app'), { childList: true });
+new MutationObserver(() => motionInit()).observe(document.getElementById('app'), { childList: true });
 
 // Chrome de l'application (marque, engrenage) — icônes, pas d'emojis.
 document.getElementById('brand').innerHTML =

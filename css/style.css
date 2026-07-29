@@ -312,12 +312,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus
 .hero .sub a { color: var(--text-primary); border-bottom: 1px solid var(--hairline-strong); }
 .hero .hero-count { text-align: right; position: relative; margin-left: auto; }
 @media (max-width: 760px) { .hero-inner { align-items: flex-start; gap: 26px; } .hero .hero-count { text-align: left; margin-left: 0; } }
+/* Couleur pleine (et non un dégradé clippé au texte) : les colonnes du
+   compteur à rouleaux créent leurs propres contextes de rognage, à travers
+   lesquels un background-clip: text ne peut pas peindre. */
 .hero .hero-count .n {
   font-family: var(--font-mono); font-weight: 400;
-  font-size: clamp(4.4rem, 10vw, 8.5rem); line-height: 0.86; letter-spacing: -0.06em;
+  font-size: clamp(4.4rem, 10vw, 8.5rem); line-height: 1; letter-spacing: -0.06em;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(160deg, #fff 20%, rgba(122, 162, 255, 0.75) 90%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  color: #fff;
+  text-shadow: 0 0 70px rgba(122, 162, 255, 0.45);
 }
 .hero .hero-count .c {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
@@ -726,4 +729,147 @@ details.card > summary::-webkit-details-marker { display: none; }
 @media (prefers-contrast: more) {
   :root { --hairline: rgba(255, 255, 255, 0.3); --text-secondary: rgba(255, 255, 255, 0.86); --muted: rgba(255, 255, 255, 0.72); }
   body::after { display: none; }
+}
+
+/* ==========================================================================
+   Transitions (transitions.dev) — tokens de motion partagés
+   ========================================================================== */
+:root {
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* 19 — tilt 3D + reflet au curseur */
+  --tilt-perspective: 1100px;
+  --tilt-return: 1000ms;
+  --tilt-return-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-follow: 400ms;
+  --tilt-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-glare-opacity: 0.30;
+  --tilt-glare-fade: 300ms;
+  --tilt-glare-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* 26 — compteur à rouleaux */
+  --reel-dur: 1500ms;
+  --reel-cell: 1em;
+  --reel-spin-blur: 3px;
+  --reel-stagger: 90ms;
+  --reel-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* 16 — pilule glissante */
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* 25 — coche qui se dessine */
+  --check-box: 200ms;
+  --check-draw: 300ms;
+  --check-uncheck: 150ms;
+  --check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- 19. Tilt 3D vers le pointeur, avec reflet ---------- */
+.t-tilt { touch-action: none; }
+.t-tilt-card {
+  transform:
+    perspective(var(--tilt-perspective))
+    rotateX(var(--tilt-rx, 0deg))
+    rotateY(var(--tilt-ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform var(--tilt-return) var(--tilt-return-ease),
+              border-color var(--t), box-shadow var(--t);
+  will-change: transform;
+}
+.t-tilt-card.is-tilting { transition: transform var(--tilt-follow) var(--tilt-follow-ease); }
+.t-tilt .card.t-tilt-card:hover {
+  transform:
+    perspective(var(--tilt-perspective))
+    rotateX(var(--tilt-rx, 0deg))
+    rotateY(var(--tilt-ry, 0deg));
+}
+.t-tilt-glare {
+  position: absolute; inset: var(--bezel); z-index: 0;
+  pointer-events: none; opacity: 0;
+  border-radius: var(--r-in);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle 110px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255,255,255,0.40), rgba(255,255,255,0.05) 52%, rgba(255,255,255,0) 84%),
+    radial-gradient(circle 260px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(122,162,255,0.18), rgba(255,255,255,0.03) 58%, rgba(255,255,255,0) 78%);
+  transition: opacity var(--tilt-glare-fade) var(--tilt-glare-ease);
+}
+.t-tilt.is-hover .t-tilt-glare { opacity: var(--tilt-glare-opacity); }
+.t-tilt .card > *:not(.t-tilt-glare) { position: relative; z-index: 1; }
+
+/* ---------- 26. Compteur à rouleaux (0-9 verticaux) ---------- */
+.t-reel { display: inline-flex; align-items: center; height: var(--reel-cell); font-variant-numeric: tabular-nums; }
+.t-reel-col {
+  position: relative; height: var(--reel-cell); overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 20%, #000 80%, transparent 100%);
+}
+.t-reel-strip { display: flex; flex-direction: column; will-change: transform, filter; }
+.t-reel-digit { height: var(--reel-cell); display: flex; align-items: center; justify-content: center; }
+
+/* ---------- 16. Pilule glissante de la navigation ---------- */
+.nav-pill {
+  position: absolute; top: 6px; left: 0; height: 34px; width: 0;
+  background: var(--text-primary); border-radius: 999px;
+  transform: translateX(0); z-index: 0; pointer-events: none; opacity: 0;
+  transition: transform var(--tabs-dur) var(--tabs-ease),
+              width var(--tabs-dur) var(--tabs-ease),
+              opacity var(--duration-quick) var(--tabs-ease);
+  will-change: transform, width;
+}
+.nav-pill.ready { opacity: 1; }
+.topbar .navlink { z-index: 1; }
+.topbar .navlink.active { background: transparent; color: #050505; }
+
+/* ---------- 25. Coche qui se dessine ---------- */
+.task-check {
+  display: flex; gap: 13px; align-items: flex-start; width: 100%;
+  background: none; border: none; padding: 11px 0; margin: 0;
+  font: inherit; font-size: 14.5px; text-align: left; cursor: pointer;
+  color: var(--text-secondary); line-height: 1.5;
+  transition: color var(--duration-fast) var(--check-ease), opacity var(--duration-fast) var(--check-ease);
+}
+.task-check:hover { color: var(--text-primary); }
+.task-check[aria-checked="true"] { opacity: 0.45; }
+.task-check[aria-checked="true"] .task-label { text-decoration: line-through; }
+.t-check {
+  flex: none; width: 20px; height: 20px; border-radius: 7px; margin-top: 1px;
+  border: 1px solid var(--baseline); background: rgba(255, 255, 255, 0.04);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--check-box) var(--check-ease), border-color var(--check-box) var(--check-ease);
+}
+.task-check[aria-checked="true"] .t-check { background: var(--accent); border-color: transparent; }
+.t-check svg { width: 13px; height: 13px; }
+.t-check svg path {
+  stroke: #050505; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 16; stroke-dashoffset: 16;
+  transition: stroke-dashoffset var(--check-uncheck) var(--check-ease);
+}
+.task-check[aria-checked="true"] .t-check svg path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--check-draw) var(--check-ease) var(--duration-micro);
+}
+
+/* ---------- 21. Accordéon (details) ---------- */
+details.card > summary::after {
+  content: ""; width: 8px; height: 8px; margin-left: auto;
+  border-right: 1.2px solid currentColor; border-bottom: 1.2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--duration-fast) var(--ease-out-quint);
+}
+details.card[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-tilt-card { transform: none !important; transition: none !important; }
+  .t-reel-strip { transition: none !important; filter: none !important; }
+  .nav-pill, .t-check, .t-check svg path, details.card > summary::after { transition: none !important; }
 }
