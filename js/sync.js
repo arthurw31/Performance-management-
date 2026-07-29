@@ -156,7 +156,7 @@ async function syncSignup() {
     syncState.user = data.session.user;
     await syncPull();
     refreshSettingsSyncSection();
-    syncMsg('Compte créé, synchro activée ✓', true);
+    syncMsg('Compte créé, synchro activée.', true);
   } else {
     syncMsg('Compte créé ! Vérifie ta boîte mail pour confirmer, puis connecte-toi.', true);
   }
@@ -186,7 +186,7 @@ async function syncLogin() {
   syncState.user = data.user;
   await syncPull();
   refreshSettingsSyncSection();
-  syncMsg('Connecté ✓ — progression synchronisée.', true);
+  syncMsg('Connecté — progression synchronisée.', true);
 }
 
 async function syncLogout() {
@@ -220,8 +220,8 @@ function updateSyncBadge() {
   const meta = syncState.user.user_metadata || {};
   const avatar = meta.avatar_url || meta.picture;
   b.innerHTML = `<a href="javascript:openSettings()" style="text-decoration:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:var(--text-primary);font-weight:700;font-size:15px">
-    ${avatar ? `<img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" style="width:26px;height:26px;border-radius:50%;display:block">` : '☁️'}
-    <span>${esc(syncUserName())}</span>${syncState.status === 'error' ? ' ⚠️' : ''}
+    ${avatar ? `<img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" style="width:26px;height:26px;border-radius:50%;display:block">` : ic('cloud', 17)}
+    <span>${esc(syncUserName())}</span>${syncState.status === 'error' ? ic('close', 13) : ''}
   </a>`;
   b.title = syncState.status === 'error'
     ? 'Erreur de synchronisation'
@@ -232,7 +232,7 @@ function updateSyncBadge() {
 function syncSettingsHTML() {
   const cfg = DB.settings || {};
   const authPart = syncState.user
-    ? `<p style="font-size:15px;margin:10px 0 8px">✅ Connecté : <strong>${esc(syncUserName())}</strong>
+    ? `<p style="font-size:15px;margin:10px 0 8px">Connecté : <strong>${esc(syncUserName())}</strong>
          <span style="color:var(--muted)">(${esc(syncState.user.email)})</span></p>
        <button class="btn secondary small" onclick="syncLogout()">Se déconnecter</button>`
     : `<button class="btn small google-btn" onclick="syncLoginGoogle()">
@@ -254,7 +254,7 @@ function syncSettingsHTML() {
     <hr style="border:none;border-top:1px solid var(--grid);margin:16px 0 4px">
     <label>Compte</label>
     ${syncState.user ? '' : `<p style="font-size:14px;color:var(--muted);margin:2px 0 10px">
-      Connecte-toi pour sauvegarder ta progression et utiliser le tuteur IA 🎓.</p>`}
+      Connecte-toi pour sauvegarder ta progression et utiliser le tuteur IA.</p>`}
     <div id="sync-auth-area">${authPart}</div>
     <p id="sync-msg" style="font-size:13px;margin:8px 0 0"></p>
     <input type="hidden" id="set-sburl" value="${esc(cfg.sbUrl || '')}">

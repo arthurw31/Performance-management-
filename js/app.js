@@ -159,40 +159,46 @@ function renderDashboard() {
   const week = idx >= 0 ? days.slice(idx, idx + 7) : [];
 
   app().innerHTML = `
-    <div class="hero">
-      <div style="position:relative;z-index:1">
-        <h1>Bonjour 👋</h1>
-        <p class="sub">Objectif : Tage Mage + TOEIC le <strong>${fmtDate(DB.settings.examDate)}</strong>
-          · <a href="javascript:openSettings()">Modifier</a></p>
-      </div>
-      <div class="hero-count">
-        <div class="n">${daysLeft}</div>
-        <div class="c">jour${daysLeft > 1 ? 's' : ''} avant l'examen</div>
+    <div class="hero reveal">
+      <div class="hero-inner">
+        <div>
+          <span class="eyebrow">${ic('target', 12)} Objectif Master</span>
+          <h1>Bonjour.</h1>
+          <p class="sub">Tage Mage &amp; TOEIC le <strong>${fmtDate(DB.settings.examDate)}</strong>
+            &nbsp;·&nbsp; <a href="javascript:openSettings()">Modifier la date</a></p>
+        </div>
+        <div class="hero-count">
+          <div class="n">${daysLeft}</div>
+          <div class="c">jour${daysLeft > 1 ? 's' : ''} restants</div>
+        </div>
       </div>
     </div>
 
     <div class="tiles">
-      <div class="tile c-orange"><div class="label">Plan suivi</div><div class="value">${prog.pct}%</div><div class="delta">${prog.done}/${prog.all} tâches à ce jour</div></div>
-      <div class="tile c-blue"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
-      <div class="tile c-green"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
-      <div class="tile c-violet"><div class="label">Vocabulaire vu</div><div class="value">${vocabSeen}</div><div class="delta">sur ${TOEIC_VOCAB.length} mots · ${dueCount} à réviser</div></div>
+      <div class="tile c-orange reveal"><div class="label">Plan suivi</div><div class="value">${prog.pct}%</div><div class="delta">${prog.done}/${prog.all} tâches à ce jour</div></div>
+      <div class="tile c-blue reveal"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-green reveal"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-violet reveal"><div class="label">Vocabulaire</div><div class="value">${vocabSeen}</div><div class="delta">sur ${TOEIC_VOCAB.length} mots · ${dueCount} à réviser</div></div>
     </div>
 
-    <div class="grid2" style="margin-top:18px">
-      <div class="card">
-        <h3>📅 Session du jour ${today ? `<span class="badge">${today.type === 'tm' ? 'Tage Mage' : today.type === 'toeic' ? 'TOEIC' : 'Repos actif'} · ${PHASE_NAMES[today.phase]}</span>` : ''}</h3>
+    <div class="bento" style="margin-top:22px">
+      <div class="card b-7 reveal">
+        <span class="ic-lead">${ic('calendar', 22)}</span>
+        <h3>Session du jour</h3>
+        ${today ? `<div class="pill-row"><span class="badge">${today.type === 'tm' ? 'Tage Mage' : today.type === 'toeic' ? 'TOEIC' : 'Repos actif'}</span><span class="badge">${PHASE_NAMES[today.phase]}</span></div>` : ''}
         ${today ? today.tasks.map((t, i) => {
           const done = (DB.plan[today.date] || [])[i];
-          return `<label style="display:flex;gap:8px;font-size:14px;margin:6px 0;cursor:pointer;${done ? 'text-decoration:line-through;opacity:.6' : ''}">
-            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleTask('${today.date}',${i},this.checked);renderDashboard()"> ${esc(t)}</label>`;
-        }).join('') : `<p class="desc">Le plan est terminé — c'est le jour J (ou après). Bonne chance ! 🍀</p>`}
+          return `<label class="task-check ${done ? 'done' : ''}">
+            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleTask('${today.date}',${i},this.checked);renderDashboard()"><span>${esc(t)}</span></label>`;
+        }).join('') : `<p class="desc">Le plan est terminé — c'est le jour J (ou après). Bonne chance.</p>`}
       </div>
-      <div class="card">
-        <h3>🔁 Vocabulaire du jour</h3>
+      <div class="card b-5 reveal">
+        <span class="ic-lead">${ic('repeat', 22)}</span>
+        <h3>Vocabulaire du jour</h3>
         <p class="desc">${dueCount > 0
-          ? `<strong>${dueCount}</strong> carte${dueCount > 1 ? 's' : ''} à réviser aujourd'hui — la régularité fait tout en répétition espacée.`
-          : `Aucune carte en attente — bravo ! Lance quand même une session pour découvrir de nouveaux mots.`}</p>
-        <a class="btn small" href="#/toeic">Lancer les flashcards</a>
+          ? `<strong>${dueCount}</strong> carte${dueCount > 1 ? 's' : ''} à réviser aujourd'hui. La régularité fait tout en répétition espacée.`
+          : `Aucune carte en attente. Lance quand même une session pour découvrir de nouveaux mots.`}</p>
+        ${cta('Lancer les flashcards', '#/toeic', 'small')}
       </div>
     </div>
 
@@ -203,21 +209,29 @@ function renderDashboard() {
         const isToday = d.date === todayISO();
         const doneN = (DB.plan[d.date] || []).filter(Boolean).length;
         const allDone = doneN >= d.tasks.length;
-        return `<a class="wday ${d.type} ${isToday ? 'today' : ''}" href="#/plan">
+        return `<a class="wday ${d.type} ${isToday ? 'today' : ''} reveal" href="#/plan">
           <div class="d">${esc(fmtDate(d.date))}</div>
-          <div class="t">${d.type === 'tm' ? 'Tage Mage' : d.type === 'toeic' ? 'TOEIC' : '☕ Repos'}</div>
-          <div class="s ${allDone ? 'done' : ''}">${allDone ? '✓ terminé' : `${doneN}/${d.tasks.length} tâches`}</div>
+          <div class="t">${d.type === 'tm' ? 'Tage Mage' : d.type === 'toeic' ? 'TOEIC' : 'Repos'}</div>
+          <div class="s ${allDone ? 'done' : ''}">${allDone ? 'terminé' : `${doneN}/${d.tasks.length}`}</div>
         </a>`;
       }).join('')}
     </div>` : ''}
 
     <h2>Accès rapide</h2>
     <div class="grid4">
-      <div class="card qc blue" onclick="location.hash='#/tagemage'"><div class="chip">🧠</div><h3>Tage Mage</h3><p class="desc">6 sous-tests, séries chronométrées avec corrections détaillées.</p><a class="btn small" href="#/tagemage">S'entraîner</a></div>
-      <div class="card qc green" onclick="location.hash='#/toeic'"><div class="chip">🇬🇧</div><h3>TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio.</p><a class="btn small" href="#/toeic">S'entraîner</a></div>
-      <div class="card qc orange" onclick="location.hash='#/plan'"><div class="chip">🗓️</div><h3>Plan de révision</h3><p class="desc">Programme jour par jour jusqu'à l'examen, en 3 phases.</p><a class="btn small" href="#/plan">Voir le plan</a></div>
-      <div class="card qc violet" onclick="location.hash='#/stats'"><div class="chip">📈</div><h3>Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p><a class="btn small" href="#/stats">Voir les stats</a></div>
+      <div class="card qc blue reveal" onclick="location.hash='#/tagemage'"><div class="chip">${ic('cpu', 22)}</div><h3>Tage Mage</h3><p class="desc">Six sous-tests, séries chronométrées au format réel et corrections détaillées.</p>${cta("S'entraîner", '#/tagemage', 'small')}</div>
+      <div class="card qc green reveal" onclick="location.hash='#/toeic'"><div class="chip">${ic('globe', 22)}</div><h3>TOEIC</h3><p class="desc">Flashcards, grammaire, lecture et listening audio des sept parties.</p>${cta("S'entraîner", '#/toeic', 'small')}</div>
+      <div class="card qc orange reveal" onclick="location.hash='#/plan'"><div class="chip">${ic('flag', 22)}</div><h3>Plan de révision</h3><p class="desc">Programme jour par jour jusqu'à l'examen, en trois phases.</p>${cta('Voir le plan', '#/plan', 'small')}</div>
+      <div class="card qc violet reveal" onclick="location.hash='#/stats'"><div class="chip">${ic('chart', 22)}</div><h3>Progression</h3><p class="desc">Historique des scores et points faibles par sous-test.</p>${cta('Voir les stats', '#/stats', 'small')}</div>
     </div>`;
+}
+
+// CTA avec icône imbriquée dans son propre cercle (jamais de flèche nue).
+function cta(label, href, cls = '') {
+  const inner = `${esc(label)}<span class="btn-ic">${ic('arrow', 13)}</span>`;
+  return href.startsWith('#') || href.startsWith('http')
+    ? `<a class="btn ${cls}" href="${href}">${inner}</a>`
+    : `<button class="btn ${cls}" onclick="${href}">${inner}</button>`;
 }
 
 function toggleTask(date, i, val) {
@@ -238,14 +252,15 @@ function renderPlan() {
   const prog = planProgress();
 
   app().innerHTML = `
+    <span class="eyebrow">${ic('flag', 12)} Six semaines</span>
     <h1>Plan de révision</h1>
-    <p class="sub">Du ${fmtDate(DB.settings.startDate)} au ${fmtDate(DB.settings.examDate)} —
-      jours pairs TOEIC, jours impairs Tage Mage, un jour léger par semaine.
+    <p class="sub">Du ${fmtDate(DB.settings.startDate)} au ${fmtDate(DB.settings.examDate)}. Jours pairs TOEIC,
+      jours impairs Tage Mage, un jour léger par semaine.
       <a href="javascript:openSettings()">Modifier les dates</a></p>
-    <div class="meter"><div class="mlabel"><span>Tâches accomplies (jusqu'à aujourd'hui)</span><span class="val">${prog.pct}%</span></div>
+    <div class="meter"><div class="mlabel"><span>Tâches accomplies jusqu'à aujourd'hui</span><span class="val">${prog.pct}%</span></div>
       <div class="track"><div class="fill" style="width:${prog.pct}%"></div></div></div>
     ${weeks.map((w, wi) => `
-      <div class="week">
+      <div class="week reveal">
         <h3>Semaine ${wi + 1}<span class="phase-tag">${PHASE_NAMES[w[0].phase]}</span></h3>
         <div class="days">
           ${w.map(d => {
@@ -254,7 +269,7 @@ function renderPlan() {
             const checks = DB.plan[d.date] || [];
             return `<div class="day ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}">
               <div class="dhead"><span class="dnum">${fmtDate(d.date)}</span>
-                <span class="dtype ${d.type}">${d.type === 'tm' ? 'TM' : d.type === 'toeic' ? 'TOEIC' : '☕'}</span></div>
+                <span class="dtype ${d.type}">${d.type === 'tm' ? 'TM' : d.type === 'toeic' ? 'TOEIC' : 'Repos'}</span></div>
               ${d.tasks.map((t, i) => `<label class="${checks[i] ? 'done' : ''}">
                 <input type="checkbox" ${checks[i] ? 'checked' : ''} onchange="toggleTask('${d.date}',${i},this.checked)">
                 <span>${esc(t)}</span></label>`).join('')}
@@ -268,39 +283,45 @@ function renderPlan() {
 
 function renderTageMage() {
   app().innerHTML = `
+    <span class="eyebrow">${ic('cpu', 12)} Barème 2025</span>
     <h1>Tage Mage</h1>
-    <p class="sub">Barème officiel 2025 : <strong>+4</strong> par bonne réponse, <strong>0</strong> pour une erreur ou une absence de réponse (plus de points négatifs depuis janvier 2025). 90 questions en 2h le jour J, sans calculatrice.</p>
-    <div class="card" style="border-color:var(--accent);padding:12px 16px;margin-bottom:14px">
-      💡 <strong>Stratégie clé :</strong> comme une erreur ne coûte rien de plus qu'un blanc, <strong>réponds à toutes les questions</strong>, même en dernière seconde. Ne laisse jamais une case vide.
+    <p class="sub"><strong>+4</strong> par bonne réponse, <strong>0</strong> pour une erreur ou une absence de réponse : plus de points négatifs depuis janvier 2025. Quatre-vingt-dix questions en deux heures le jour J, sans calculatrice.</p>
+    <div class="card reveal" style="margin-bottom:26px">
+      <span class="ic-lead">${ic('bulb', 22)}</span>
+      <h3>La stratégie qui découle du barème</h3>
+      <p class="desc" style="margin:0">Une erreur ne coûte rien de plus qu'une case vide. Donc <strong>réponds à toutes les questions</strong>, même au hasard dans les dernières secondes. Ne laisse jamais un blanc.</p>
     </div>
     <div class="grid2">
       ${TM_SUBTESTS.map(s => {
         const hist = DB.sessions.filter(x => x.cat === 'tm' && x.module === s.id);
         const best = hist.length ? Math.max(...hist.map(h => Math.round(100 * h.score / h.total))) : null;
         const n = Math.min(15, s.questions.length);
-        return `<div class="card">
-          <h3>${s.icon} ${s.name}</h3>
+        return `<div class="card reveal">
+          <span class="ic-lead">${ic(TM_ICON[s.id] || 'orbit', 22)}</span>
+          <h3>${esc(s.name)}</h3>
           <p class="desc">${esc(s.desc)}</p>
           <div class="pill-row">
-            <span class="badge">${n} questions · 20 min</span>
+            <span class="badge mono">${n} questions · 20 min</span>
             <span class="badge">banque de ${s.questions.length}</span>
-            ${best !== null ? `<span class="badge">Record : ${best}%</span>` : ''}
+            ${best !== null ? `<span class="badge">Record ${best}%</span>` : ''}
           </div>
-          <button class="btn small" onclick="startTMSubtest('${s.id}')">Lancer la série</button>
-          <a class="btn small secondary" href="#/methode/${s.id}">📘 Méthode</a>
+          ${cta('Lancer la série', `startTMSubtest('${s.id}')`, 'small')}
+          <a class="btn small secondary" href="#/methode/${s.id}">Méthode</a>
         </div>`;
       }).join('')}
-      <div class="card" style="border-color:var(--series-tm)">
-        <h3>🏁 Test blanc complet — conditions réelles</h3>
-        <p class="desc">Comme le jour J : 6 sous-tests de 15 questions (90 au total), 2 heures, score estimé /600. Prévois un créneau au calme.</p>
-        <div class="pill-row"><span class="badge">90 questions</span><span class="badge">2 h</span></div>
-        <button class="btn small" onclick="startTMMock()">Lancer le test blanc</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('flag', 22)}</span>
+        <h3>Test blanc complet</h3>
+        <p class="desc">Les conditions exactes du jour J : six sous-tests de quinze questions, deux heures de chrono, score estimé sur 600. Prévois un créneau au calme.</p>
+        <div class="pill-row"><span class="badge mono">90 questions · 2 h</span></div>
+        ${cta('Lancer le test blanc', 'startTMMock()', 'small')}
       </div>
-      <div class="card">
-        <h3>⚡ Test blanc express</h3>
-        <p class="desc">3 questions tirées au sort dans chacun des 6 sous-tests — idéal pour une session courte.</p>
-        <div class="pill-row"><span class="badge">18 questions</span><span class="badge">24 min</span></div>
-        <button class="btn small" onclick="startTMExpress()">Lancer l'express</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('bolt', 22)}</span>
+        <h3>Test blanc express</h3>
+        <p class="desc">Trois questions tirées au sort dans chacun des six sous-tests, pour une session courte.</p>
+        <div class="pill-row"><span class="badge mono">18 questions · 24 min</span></div>
+        ${cta("Lancer l'express", 'startTMExpress()', 'small')}
       </div>
     </div>`;
 }
@@ -354,16 +375,18 @@ function renderMethode() {
   const isTM = m.back === 'tagemage';
   app().innerHTML = `
     <div class="quiz-shell">
-      <h1>${m.icon} ${esc(m.title)}</h1>
+      <span class="eyebrow">${ic('book', 12)} Fiche méthode</span>
+      <h1>${esc(m.title.replace(/^Méthode — /, ''))}</h1>
       <p class="sub">${esc(m.intro)}</p>
-      ${m.sections.map(sec => `<div class="card">
+      ${m.sections.map(sec => `<div class="card reveal">
+        <span class="ic-lead">${ic(METHOD_ICON[id] || 'book', 22)}</span>
         <h3>${esc(sec.h)}</h3>
-        <ul style="margin:8px 0 0;padding-left:24px;line-height:1.7">
-          ${sec.items.map(it => `<li style="margin:8px 0">${it}</li>`).join('')}
+        <ul style="margin:14px 0 0;padding-left:20px;line-height:1.75;color:var(--text-secondary);font-size:15px">
+          ${sec.items.map(it => `<li style="margin:12px 0">${it}</li>`).join('')}
         </ul>
       </div>`).join('')}
       <div class="quiz-nav">
-        ${isTM ? `<button class="btn" onclick="startTMSubtest('${id}')">S'entraîner maintenant →</button>` : `<a class="btn" href="#/toeic">S'entraîner maintenant →</a>`}
+        ${isTM ? cta("S'entraîner maintenant", `startTMSubtest('${id}')`) : cta("S'entraîner maintenant", '#/toeic')}
         <a class="btn secondary" href="#/${m.back}">Retour</a>
       </div>
     </div>`;
@@ -376,78 +399,90 @@ function renderToeic() {
   const gHist = DB.sessions.filter(x => x.cat === 'toeic' && x.module === 'grammar');
   const gBest = gHist.length ? Math.max(...gHist.map(h => Math.round(100 * h.score / h.total))) : null;
   app().innerHTML = `
+    <span class="eyebrow">${ic('globe', 12)} Listening &amp; Reading</span>
     <h1>TOEIC</h1>
-    <p class="sub">TOEIC Listening &amp; Reading : 200 questions, 2h, score de <strong>10 à 990</strong>. Le score se construit surtout sur le vocabulaire (tous les jours) et les automatismes de grammaire et d'écoute.</p>
-    <details class="card" style="margin-bottom:14px">
-      <summary style="cursor:pointer;font-weight:600;font-size:14px">📋 Structure réelle de l'examen (les 7 parties)</summary>
+    <p class="sub">Deux cents questions, deux heures, score de <strong>10 à 990</strong>. Il se construit surtout sur le vocabulaire — tous les jours — et sur les automatismes de grammaire et d'écoute.</p>
+    <details class="card reveal" style="margin-bottom:26px">
+      <summary>${ic('doc', 15)} Structure réelle de l'examen — les sept parties</summary>
       <div style="overflow-x:auto"><table class="datatable" style="margin-top:10px">
-        <tr><th>Partie</th><th>Type</th><th>Questions</th></tr>
-        <tr><td>🎧 Listening (45 min · 100 q)</td><td>Part 1 — Photos</td><td>6</td></tr>
+        <tr><th>Épreuve</th><th>Partie</th><th>Questions</th></tr>
+        <tr><td>Listening — 45 min, 100 q</td><td>Part 1 — Photos</td><td>6</td></tr>
         <tr><td></td><td>Part 2 — Question / réponse</td><td>25</td></tr>
         <tr><td></td><td>Part 3 — Conversations</td><td>39</td></tr>
         <tr><td></td><td>Part 4 — Courts exposés</td><td>30</td></tr>
-        <tr><td>📖 Reading (75 min · 100 q)</td><td>Part 5 — Phrases à trous</td><td>30</td></tr>
+        <tr><td>Reading — 75 min, 100 q</td><td>Part 5 — Phrases à trous</td><td>30</td></tr>
         <tr><td></td><td>Part 6 — Textes à compléter</td><td>16</td></tr>
         <tr><td></td><td>Part 7 — Compréhension de textes</td><td>54</td></tr>
       </table></div>
-      <p class="desc" style="margin:10px 0 0">Cette plateforme t'entraîne sur les parties les plus rentables à réviser : vocabulaire (transversal), grammaire (Part 5/6), lecture (Part 7) et écoute (Part 2). Astuce vérifiée : en Reading, si deux réponses sont synonymes, élimine-les — il ne peut y avoir qu'une bonne réponse.</p>
+      <p class="desc" style="margin:18px 0 0">Astuce vérifiée : en Reading, si deux réponses sont synonymes, élimine-les toutes les deux — il ne peut y avoir qu'une bonne réponse.</p>
     </details>
-    <div class="card" style="border-color:var(--series-toeic)">
-      <h3>🏁 Mini test blanc Reading — chronométré</h3>
-      <p class="desc">Part 5 (20 q) + Part 6 (3 q) + Part 7 (4 q) mélangées, 45 secondes par question comme le jour J, avec score Reading estimé /495.</p>
-      <div class="pill-row"><span class="badge">27 questions</span><span class="badge">~20 min</span></div>
-      <button class="btn small" onclick="startToeicMock()">Lancer le test blanc</button>
+    <div class="card reveal">
+      <span class="ic-lead">${ic('flag', 22)}</span>
+      <h3>Mini test blanc Reading</h3>
+      <p class="desc">Part 5, 6 et 7 mélangées, quarante-cinq secondes par question comme le jour J, avec score Reading estimé sur 495.</p>
+      <div class="pill-row"><span class="badge mono">27 questions · 20 min</span></div>
+      ${cta('Lancer le test blanc', 'startToeicMock()', 'small')}
     </div>
-    <h2>📘 Fiches méthode</h2>
+
+    <h2>Fiches méthode</h2>
     <div class="grid3">
-      <div class="card"><h3>📝 Grammaire (Part 5-6)</h3><p class="desc">Les 5 types de questions et le bon réflexe pour chacun.</p><a class="btn small secondary" href="#/methode/toeic-part5">Lire la fiche</a></div>
-      <div class="card"><h3>🎧 Listening (Parts 1-4)</h3><p class="desc">Quoi écouter avant même que l'audio commence.</p><a class="btn small secondary" href="#/methode/toeic-listening">Lire la fiche</a></div>
-      <div class="card"><h3>📄 Lecture (Part 7)</h3><p class="desc">La méthode « questions d'abord » et le timing.</p><a class="btn small secondary" href="#/methode/toeic-reading">Lire la fiche</a></div>
+      <div class="card reveal"><span class="ic-lead">${ic('note', 22)}</span><h3>Grammaire</h3><p class="desc">Les cinq types de questions des Parts 5 et 6, et le bon réflexe pour chacun.</p><a class="btn small secondary" href="#/methode/toeic-part5">Lire la fiche</a></div>
+      <div class="card reveal"><span class="ic-lead">${ic('headphones', 22)}</span><h3>Listening</h3><p class="desc">Quoi écouter avant même que l'audio commence, partie par partie.</p><a class="btn small secondary" href="#/methode/toeic-listening">Lire la fiche</a></div>
+      <div class="card reveal"><span class="ic-lead">${ic('doc', 22)}</span><h3>Lecture</h3><p class="desc">La méthode « questions d'abord » et la gestion du temps en Part 7.</p><a class="btn small secondary" href="#/methode/toeic-reading">Lire la fiche</a></div>
     </div>
+
     <h2>Entraînements</h2>
     <div class="grid2">
-      <div class="card">
-        <h3>🖼️ Listening — Part 1 (photos)</h3>
-        <p class="desc">Une scène est décrite (la « photo »), puis 4 phrases sont lues en anglais — choisis celle qui décrit le mieux l'image, sans texte affiché.</p>
-        <div class="pill-row"><span class="badge">${TOEIC_PART1.length} photos</span><span class="badge">~5 min</span></div>
-        <button class="btn small" onclick="startToeicPart1()">Lancer la série</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('image', 22)}</span>
+        <h3>Part 1 — Photos</h3>
+        <p class="desc">Une scène est décrite, puis quatre phrases sont lues en anglais. Choisis celle qui décrit le mieux l'image, sans texte affiché.</p>
+        <div class="pill-row"><span class="badge mono">${TOEIC_PART1.length} photos · 5 min</span></div>
+        ${cta('Lancer la série', 'startToeicPart1()', 'small')}
       </div>
-      <div class="card">
-        <h3>🃏 Vocabulaire — flashcards</h3>
-        <p class="desc">Répétition espacée : les mots reviennent au bon moment pour être mémorisés durablement. À faire chaque jour, même 5 minutes.</p>
-        <div class="pill-row"><span class="badge">${TOEIC_VOCAB.length} mots</span><span class="badge">${due} carte${due > 1 ? 's' : ''} aujourd'hui</span></div>
-        <button class="btn small" onclick="startFlashcards()">Réviser (${due})</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('cards', 22)}</span>
+        <h3>Vocabulaire — flashcards</h3>
+        <p class="desc">Répétition espacée : les mots reviennent au bon moment pour être mémorisés durablement. Chaque jour, même cinq minutes.</p>
+        <div class="pill-row"><span class="badge mono">${TOEIC_VOCAB.length} mots</span><span class="badge">${due} aujourd'hui</span></div>
+        ${cta(`Réviser (${due})`, 'startFlashcards()', 'small')}
       </div>
-      <div class="card">
-        <h3>📝 Grammaire — Part 5</h3>
-        <p class="desc">Phrases à compléter, 30 secondes par question comme le jour J. Chaque erreur est expliquée.</p>
-        <div class="pill-row"><span class="badge">20 questions · 10 min</span><span class="badge">banque de ${TOEIC_GRAMMAR.length}</span>${gBest !== null ? `<span class="badge">Record : ${gBest}%</span>` : ''}</div>
-        <button class="btn small" onclick="startToeicGrammar()">Lancer la série</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('note', 22)}</span>
+        <h3>Part 5 — Grammaire</h3>
+        <p class="desc">Phrases à compléter, trente secondes par question comme le jour J. Chaque erreur est expliquée.</p>
+        <div class="pill-row"><span class="badge mono">20 questions · 10 min</span><span class="badge">banque de ${TOEIC_GRAMMAR.length}</span>${gBest !== null ? `<span class="badge">Record ${gBest}%</span>` : ''}</div>
+        ${cta('Lancer la série', 'startToeicGrammar()', 'small')}
       </div>
-      <div class="card">
-        <h3>📄 Lecture — Part 7</h3>
-        <p class="desc">Textes professionnels (e-mails, avis) avec questions de compréhension.</p>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('doc', 22)}</span>
+        <h3>Part 7 — Lecture</h3>
+        <p class="desc">Textes professionnels — courriels, avis clients — avec questions de compréhension.</p>
         <div class="pill-row">${TOEIC_READING.map((r, i) => `<button class="btn small secondary" onclick="startToeicReading(${i})">${esc(r.title)}</button>`).join('')}</div>
       </div>
-      <div class="card">
-        <h3>🎧 Listening — Part 2</h3>
-        <p class="desc">Une question lue à voix haute, trois réponses : choisis la bonne <em>sans lire les textes</em>, comme au vrai TOEIC. (Utilise la synthèse vocale du navigateur.)</p>
-        <div class="pill-row"><span class="badge">${TOEIC_LISTENING.length} items</span><span class="badge">~8 min</span></div>
-        <button class="btn small" onclick="startListening()">Lancer l'écoute</button>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('headphones', 22)}</span>
+        <h3>Part 2 — Question / réponse</h3>
+        <p class="desc">Une question lue à voix haute, trois réponses. Choisis la bonne <em>sans lire les textes</em>, comme au vrai TOEIC.</p>
+        <div class="pill-row"><span class="badge mono">${TOEIC_LISTENING.length} items · 8 min</span></div>
+        ${cta("Lancer l'écoute", 'startListening()', 'small')}
       </div>
-      <div class="card">
-        <h3>🎧 Listening — Part 3 (conversations)</h3>
-        <p class="desc">Une conversation entre deux personnes est lue à voix haute, puis 3 questions. Le texte n'est pas affiché, comme au vrai TOEIC.</p>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('headphones', 22)}</span>
+        <h3>Part 3 — Conversations</h3>
+        <p class="desc">Une conversation entre deux personnes est lue à voix haute, puis trois questions. Le texte n'est jamais affiché.</p>
         <div class="pill-row">${TOEIC_PART3.map((c, i) => `<button class="btn small secondary" onclick="startToeicPart3(${i})">${esc(c.title)}</button>`).join('')}</div>
       </div>
-      <div class="card">
-        <h3>🎧 Listening — Part 4 (exposés)</h3>
-        <p class="desc">Un court exposé (annonce, message vocal) lu à voix haute, puis 3 questions de compréhension.</p>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('volume', 22)}</span>
+        <h3>Part 4 — Exposés</h3>
+        <p class="desc">Un court exposé — annonce, message vocal — lu à voix haute, puis trois questions de compréhension.</p>
         <div class="pill-row">${TOEIC_PART4.map((c, i) => `<button class="btn small secondary" onclick="startToeicPart4(${i})">${esc(c.title)}</button>`).join('')}</div>
       </div>
-      <div class="card">
-        <h3>✍️ Grammaire — Part 6 (textes à trous)</h3>
-        <p class="desc">Un texte professionnel avec plusieurs mots manquants à compléter : grammaire et cohérence en contexte.</p>
+      <div class="card reveal">
+        <span class="ic-lead">${ic('pen', 22)}</span>
+        <h3>Part 6 — Textes à trous</h3>
+        <p class="desc">Un texte professionnel avec plusieurs mots manquants : grammaire et cohérence en contexte.</p>
         <div class="pill-row">${TOEIC_PART6.map((t, i) => `<button class="btn small secondary" onclick="startToeicPart6(${i})">${esc(t.title)}</button>`).join('')}</div>
       </div>
     </div>`;
@@ -595,10 +630,10 @@ function renderQuizQuestion() {
         <button class="btn small secondary" onclick="if(confirm('Abandonner cette série ? Rien ne sera enregistré.')){location.hash='#/${qz.cat === 'tm' ? 'tagemage' : 'toeic'}'}">Quitter</button>
       </div>
     </div>
-    ${qz.intro && qz.idx === 0 ? `<div class="expl">${esc(qz.intro)}</div><br>` : ''}
-    ${qz.audioScript ? `<div class="card" style="text-align:center;padding:14px">
-      <button class="btn" onclick="quizPlayAudio()">🔊 Écouter ${esc(qz.audioLabel || "l'enregistrement")}</button>
-      <p class="desc" style="margin:8px 0 0">Écoute puis réponds aux ${qz.questions.length} questions ci-dessous — le texte n'est pas affiché, comme au vrai TOEIC.</p>
+    ${qz.intro && qz.idx === 0 ? `<div class="expl" style="margin-bottom:26px">${esc(qz.intro)}</div>` : ''}
+    ${qz.audioScript ? `<div class="card listen-box" style="margin-bottom:26px">
+      <button class="bigplay" onclick="quizPlayAudio()">Écouter ${esc(qz.audioLabel || "l'enregistrement")}<span class="btn-ic">${ic('volume', 15)}</span></button>
+      <p class="desc" style="margin:18px 0 0">Écoute puis réponds aux ${qz.questions.length} questions ci-dessous. Le texte n'est pas affiché, comme au vrai TOEIC.</p>
     </div>` : ''}
     ${passage ? `<div class="passage">${esc(passage)}</div>` : ''}
     <div class="qtext">${esc(q.text)}</div>
@@ -609,10 +644,10 @@ function renderQuizQuestion() {
         </button>`).join('')}
     </div>
     <div class="quiz-nav">
-      <button class="btn secondary" onclick="moveQuiz(-1)" ${qz.idx === 0 ? 'disabled' : ''}>← Précédent</button>
+      <button class="btn secondary" onclick="moveQuiz(-1)" ${qz.idx === 0 ? 'disabled' : ''}>Précédent</button>
       ${qz.idx < qz.questions.length - 1
-        ? `<button class="btn" onclick="moveQuiz(1)">Suivant →</button>`
-        : `<button class="btn" onclick="finishQuiz()">Terminer ✓</button>`}
+        ? cta('Suivant', 'moveQuiz(1)')
+        : cta('Terminer', 'finishQuiz()')}
     </div>
     <div class="qdots">
       ${qz.questions.map((_, i) => `<button class="qdot ${qz.answers[i] !== null ? 'answered' : ''} ${i === qz.idx ? 'current' : ''}" onclick="jumpQuiz(${i})">${i + 1}</button>`).join('')}
@@ -654,19 +689,20 @@ function finishQuiz() {
   if (qz.tmScore) {
     const raw = good * 4;
     const est = Math.round(600 * raw / (qz.questions.length * 4));
-    tmScoreHtml = `<div class="tile"><div class="label">Score Tage Mage estimé (barème 2025 : +4 / 0)</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 600</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
+    tmScoreHtml = `<div class="tile c-violet reveal"><div class="label">Score Tage Mage estimé</div><div class="value">${est}<span style="font-size:15px;color:var(--muted)"> / 600</span></div><div class="delta">Estimation sur cet échantillon</div></div>`;
   }
   if (qz.toeicScore) {
     const est = Math.round(pct * 495 / 100 / 5) * 5;
-    tmScoreHtml = `<div class="tile"><div class="label">Score Reading estimé</div><div class="value">${est} <span style="font-size:14px;color:var(--muted)">/ 495</span></div><div class="delta">Estimation indicative sur cet échantillon</div></div>`;
+    tmScoreHtml = `<div class="tile c-violet reveal"><div class="label">Score Reading estimé</div><div class="value">${est}<span style="font-size:15px;color:var(--muted)"> / 495</span></div><div class="delta">Estimation sur cet échantillon</div></div>`;
   }
 
   app().innerHTML = `
-    <h1>Résultats — ${esc(qz.label)}</h1>
+    <span class="eyebrow">${ic('check', 12)} Série terminée</span>
+    <h1>${esc(qz.label)}</h1>
     <div class="tiles">
-      <div class="tile"><div class="label">Score</div><div class="value">${good}/${qz.questions.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}% de réussite</div></div>
-      <div class="tile"><div class="label">Bonnes réponses</div><div class="value">${good}</div></div>
-      <div class="tile"><div class="label">Erreurs / sans réponse</div><div class="value">${bad} / ${blank}</div></div>
+      <div class="tile c-blue reveal"><div class="label">Score</div><div class="value">${good}/${qz.questions.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}% de réussite</div></div>
+      <div class="tile c-green reveal"><div class="label">Bonnes réponses</div><div class="value">${good}</div></div>
+      <div class="tile c-orange reveal"><div class="label">Erreurs / blancs</div><div class="value">${bad}/${blank}</div></div>
       ${tmScoreHtml}
     </div>
     <h2>Correction détaillée</h2>
@@ -675,19 +711,19 @@ function finishQuiz() {
         const a = qz.answers[i];
         const ok = a === q.answer;
         return `<div class="result-q">
-          <div class="verdict ${ok ? 'ok' : 'ko'}">${ok ? '✓ Correct' : a === null ? '∅ Sans réponse' : '✗ Incorrect'} — Question ${i + 1}${q.section ? ' · ' + esc(q.section) : ''}</div>
-          <div class="qtext" style="font-size:16.5px">${esc(q.text)}</div>
-          <div style="font-size:15px">
-            ${a !== null && !ok ? `<div style="color:var(--critical)">Ta réponse : ${qz.letters[a]}. ${esc(q.choices[a])}</div>` : ''}
-            <div style="color:var(--good-text)">Bonne réponse : ${qz.letters[q.answer]}. ${esc(q.choices[q.answer])}</div>
+          <div class="verdict ${ok ? 'ok' : 'ko'}">${ic(ok ? 'check' : 'close', 13)} ${ok ? 'Correct' : a === null ? 'Sans réponse' : 'Incorrect'} · Question ${i + 1}${q.section ? ' · ' + esc(q.section) : ''}</div>
+          <div class="qtext" style="font-size:18px;margin:14px 0 16px">${esc(q.text)}</div>
+          <div style="font-size:15px;line-height:1.7">
+            ${a !== null && !ok ? `<div style="color:var(--critical)">Ta réponse — ${qz.letters[a]}. ${esc(q.choices[a])}</div>` : ''}
+            <div style="color:var(--good-text)">Bonne réponse — ${qz.letters[q.answer]}. ${esc(q.choices[q.answer])}</div>
           </div>
-          <div class="expl">💡 ${esc(q.expl)}</div>
-          <button class="btn small secondary" style="margin-top:8px" onclick="tutorAskQuizQuestion(${i})">🎓 Demander au tuteur</button>
+          <div class="expl">${ic('bulb', 15)}${esc(q.expl)}</div>
+          <button class="btn small secondary" style="margin-top:14px" onclick="tutorAskQuizQuestion(${i})">Demander au tuteur</button>
         </div>`;
       }).join('')}
     </div>
     <div class="quiz-nav">
-      <a class="btn" href="#/${qz.cat === 'tm' ? 'tagemage' : 'toeic'}">Retour aux entraînements</a>
+      ${cta('Retour aux entraînements', `#/${qz.cat === 'tm' ? 'tagemage' : 'toeic'}`)}
       <a class="btn secondary" href="#/stats">Voir ma progression</a>
     </div>`;
   activeQuiz = null;
@@ -719,7 +755,7 @@ function startFlashcards() {
   ensureSettings();
   const queue = srsQueue();
   if (!queue.length) {
-    app().innerHTML = `<h1>Flashcards</h1><div class="card empty">🎉 Rien à réviser aujourd'hui. Reviens demain — la répétition espacée fait le reste.</div>
+    app().innerHTML = `<h1>Flashcards</h1><div class="card empty">Rien à réviser aujourd'hui.<br>Reviens demain — la répétition espacée fait le reste.</div>
       <a class="btn secondary" href="#/toeic">Retour</a>`;
     return;
   }
@@ -731,8 +767,8 @@ function renderFlashcard() {
   const s = fcSession;
   if (s.pos >= s.queue.length) {
     app().innerHTML = `<h1>Flashcards</h1>
-      <div class="card empty">✅ Session terminée : ${s.done} carte${s.done > 1 ? 's' : ''} révisée${s.done > 1 ? 's' : ''}. À demain !</div>
-      <a class="btn" href="#/toeic">Retour au TOEIC</a>`;
+      <div class="card empty">Session terminée — ${s.done} carte${s.done > 1 ? 's' : ''} révisée${s.done > 1 ? 's' : ''}.<br>À demain.</div>
+      ${cta('Retour au TOEIC', '#/toeic')}`;
     fcSession = null;
     return;
   }
@@ -742,13 +778,13 @@ function renderFlashcard() {
   app().innerHTML = `
     <div class="quiz-shell">
     <div class="quiz-head">
-      <div><strong>Flashcards TOEIC</strong><div class="qcount">Carte ${s.pos + 1} / ${s.queue.length} ${st.reps === 0 ? '· <span style="color:var(--accent)">nouveau mot</span>' : ''}</div></div>
+      <div><strong>Flashcards TOEIC</strong><div class="qcount">Carte ${s.pos + 1} / ${s.queue.length}${st.reps === 0 ? ' · nouveau mot' : ''}</div></div>
       <a class="btn small secondary" href="#/toeic">Quitter</a>
     </div>
     <div class="flashcard" onclick="flipCard()">
       <div class="word">${esc(c.w)}</div>
       <div class="pos">${esc(c.pos)}</div>
-      ${s.flipped ? `<div class="fr">${esc(c.fr)}</div><div class="ex">« ${esc(c.ex)} »</div>` : `<div class="hint">👆 Touche la carte pour révéler la traduction</div>`}
+      ${s.flipped ? `<div class="fr">${esc(c.fr)}</div><div class="ex">« ${esc(c.ex)} »</div>` : `<div class="hint">Touche la carte pour révéler</div>`}
     </div>
     ${s.flipped ? `<div class="srs-btns">
       <button class="again" onclick="gradeCard(0)">Encore<small>&lt; 1 min</small></button>
@@ -821,9 +857,9 @@ function renderListening() {
     saveStore();
     app().innerHTML = `<h1>Listening — résultats</h1>
       <div class="tiles">
-        <div class="tile"><div class="label">Score</div><div class="value">${s.score}/${TOEIC_LISTENING.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}%</div></div>
+        <div class="tile c-green reveal"><div class="label">Score</div><div class="value">${s.score}/${TOEIC_LISTENING.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}%</div></div>
       </div>
-      <a class="btn" href="#/toeic">Retour au TOEIC</a> <a class="btn secondary" href="#/stats">Voir ma progression</a>`;
+      <div class="quiz-nav">${cta('Retour au TOEIC', '#/toeic')}<a class="btn secondary" href="#/stats">Voir ma progression</a></div>`;
     listenSession = null;
     return;
   }
@@ -831,12 +867,12 @@ function renderListening() {
   app().innerHTML = `
     <div class="quiz-shell">
     <div class="quiz-head">
-      <div><strong>TOEIC · Listening Part 2</strong><div class="qcount">Item ${s.idx + 1} / ${TOEIC_LISTENING.length} — Score : ${s.score}</div></div>
+      <div><strong>TOEIC · Listening Part 2</strong><div class="qcount">Item ${s.idx + 1} / ${TOEIC_LISTENING.length} · score ${s.score}</div></div>
       <a class="btn small secondary" href="#/toeic">Quitter</a>
     </div>
     <div class="card listen-box">
-      <button class="bigplay" onclick="playListenItem()">▶ Écouter</button>
-      <p class="desc" style="margin-top:12px">Tu vas entendre une question puis trois réponses (A, B, C).<br>Choisis la réponse la plus appropriée — sans lire de texte, comme au vrai TOEIC.</p>
+      <button class="bigplay" onclick="playListenItem()">Réécouter<span class="btn-ic">${ic('play', 14)}</span></button>
+      <p class="desc" style="margin-top:20px;max-width:44ch;margin-left:auto;margin-right:auto">Tu vas entendre une question puis trois réponses. Choisis la plus appropriée, sans lire de texte, comme au vrai TOEIC.</p>
       <div class="abc" id="abc">
         ${['A', 'B', 'C'].map((L, i) => `<button id="abc-${i}" onclick="answerListening(${i})" ${s.answered ? 'disabled' : ''}>${L}</button>`).join('')}
       </div>
@@ -863,16 +899,16 @@ function answerListening(i) {
   if (!ok) document.getElementById('abc-' + i).classList.add('wrong');
   document.querySelectorAll('#abc button').forEach(b => b.disabled = true);
   document.getElementById('listen-feedback').innerHTML = `
-    <div class="verdict ${ok ? 'ok' : 'ko'}" style="margin-bottom:8px">${ok ? '✓ Correct !' : '✗ Incorrect'}</div>
+    <div class="verdict ${ok ? 'ok' : 'ko'}" style="margin-bottom:14px">${ic(ok ? 'check' : 'close', 13)} ${ok ? 'Correct' : 'Incorrect'}</div>
     <div class="expl">
-      <strong>Transcription</strong><br>
-      — ${esc(item.q)}<br>
-      ${item.r.map((r, j) => `${'ABC'[j]}. ${esc(r)} ${j === item.answer ? '✓' : ''}`).join('<br>')}
-      <br><br>💡 ${esc(item.expl)}
+      <strong style="color:var(--text-primary)">Transcription</strong><br>
+      ${esc(item.q)}<br>
+      ${item.r.map((r, j) => `${'ABC'[j]}. ${esc(r)}${j === item.answer ? ' ✓' : ''}`).join('<br>')}
     </div>
-    <div style="margin-top:12px">
-      <button class="btn" onclick="nextListening()">Suivant →</button>
-      <button class="btn secondary" onclick="tutorAskListening(${s.idx})">🎓 Demander au tuteur</button>
+    <div class="expl">${ic('bulb', 15)}${esc(item.expl)}</div>
+    <div class="quiz-nav">
+      ${cta('Suivant', 'nextListening()')}
+      <button class="btn secondary" onclick="tutorAskListening(${s.idx})">Demander au tuteur</button>
     </div>`;
 }
 
@@ -903,9 +939,9 @@ function renderPart1() {
     saveStore();
     app().innerHTML = `<h1>Part 1 — résultats</h1>
       <div class="tiles">
-        <div class="tile"><div class="label">Score</div><div class="value">${s.score}/${TOEIC_PART1.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}%</div></div>
+        <div class="tile c-green reveal"><div class="label">Score</div><div class="value">${s.score}/${TOEIC_PART1.length}</div><div class="delta ${pct >= 60 ? 'up' : 'down'}">${pct}%</div></div>
       </div>
-      <a class="btn" href="#/toeic">Retour au TOEIC</a> <a class="btn secondary" href="#/stats">Voir ma progression</a>`;
+      <div class="quiz-nav">${cta('Retour au TOEIC', '#/toeic')}<a class="btn secondary" href="#/stats">Voir ma progression</a></div>`;
     p1Session = null;
     return;
   }
@@ -913,16 +949,16 @@ function renderPart1() {
   app().innerHTML = `
     <div class="quiz-shell">
     <div class="quiz-head">
-      <div><strong>TOEIC · Listening Part 1 — Photos</strong><div class="qcount">Photo ${s.idx + 1} / ${TOEIC_PART1.length} — Score : ${s.score}</div></div>
+      <div><strong>TOEIC · Listening Part 1</strong><div class="qcount">Photo ${s.idx + 1} / ${TOEIC_PART1.length} · score ${s.score}</div></div>
       <a class="btn small secondary" href="#/toeic">Quitter</a>
     </div>
-    <div class="card" style="border:2px dashed var(--baseline);background:var(--accent-soft)">
-      <div style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px">🖼️ LA PHOTO MONTRE :</div>
-      <div style="font-size:19px;font-style:italic">${esc(item.scene)}</div>
+    <div class="scene-card">
+      <div class="lbl">${ic('image', 13)} La photo montre</div>
+      <div class="txt">${esc(item.scene)}</div>
     </div>
     <div class="card listen-box">
-      <button class="bigplay" onclick="playPart1Item()">▶ Écouter les 4 phrases</button>
-      <p class="desc" style="margin-top:12px">Choisis la phrase (A, B, C ou D) qui décrit le mieux la photo — les phrases ne sont pas affichées, comme au vrai TOEIC.</p>
+      <button class="bigplay" onclick="playPart1Item()">Réécouter les 4 phrases<span class="btn-ic">${ic('play', 14)}</span></button>
+      <p class="desc" style="margin-top:20px;max-width:46ch;margin-left:auto;margin-right:auto">Choisis la phrase — A, B, C ou D — qui décrit le mieux la photo. Elles ne sont pas affichées, comme au vrai TOEIC.</p>
       <div class="abc" id="abc">
         ${['A', 'B', 'C', 'D'].map((L, i) => `<button id="abc-${i}" onclick="answerPart1(${i})" ${s.answered ? 'disabled' : ''}>${L}</button>`).join('')}
       </div>
@@ -949,15 +985,13 @@ function answerPart1(i) {
   if (!ok) document.getElementById('abc-' + i).classList.add('wrong');
   document.querySelectorAll('#abc button').forEach(b => b.disabled = true);
   document.getElementById('p1-feedback').innerHTML = `
-    <div class="verdict ${ok ? 'ok' : 'ko'}" style="margin-bottom:8px">${ok ? '✓ Correct !' : '✗ Incorrect'}</div>
+    <div class="verdict ${ok ? 'ok' : 'ko'}" style="margin-bottom:14px">${ic(ok ? 'check' : 'close', 13)} ${ok ? 'Correct' : 'Incorrect'}</div>
     <div class="expl">
-      <strong>Transcription</strong><br>
-      ${item.statements.map((st, j) => `${'ABCD'[j]}. ${esc(st)} ${j === item.answer ? '✓' : ''}`).join('<br>')}
-      <br><br>💡 ${esc(item.expl)}
+      <strong style="color:var(--text-primary)">Transcription</strong><br>
+      ${item.statements.map((st, j) => `${'ABCD'[j]}. ${esc(st)}${j === item.answer ? ' ✓' : ''}`).join('<br>')}
     </div>
-    <div style="margin-top:12px">
-      <button class="btn" onclick="nextPart1()">Suivant →</button>
-    </div>`;
+    <div class="expl">${ic('bulb', 15)}${esc(item.expl)}</div>
+    <div class="quiz-nav">${cta('Suivant', 'nextPart1()')}</div>`;
 }
 
 function nextPart1() {
@@ -988,12 +1022,13 @@ function renderStats() {
   });
 
   app().innerHTML = `
+    <span class="eyebrow">${ic('chart', 12)} Suivi</span>
     <h1>Progression</h1>
     <div class="tiles">
-      <div class="tile"><div class="label">Jours avant l'examen</div><div class="value">${daysLeft}</div></div>
-      <div class="tile"><div class="label">Sessions faites</div><div class="value">${sessions.length}</div></div>
-      <div class="tile"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
-      <div class="tile"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-orange reveal"><div class="label">Jours restants</div><div class="value">${daysLeft}</div></div>
+      <div class="tile c-violet reveal"><div class="label">Sessions faites</div><div class="value">${sessions.length}</div></div>
+      <div class="tile c-blue reveal"><div class="label">Précision Tage Mage</div><div class="value">${tm.pct === null ? '—' : tm.pct + '%'}</div><div class="delta">${tm.n} session${tm.n > 1 ? 's' : ''}</div></div>
+      <div class="tile c-green reveal"><div class="label">Précision TOEIC</div><div class="value">${to.pct === null ? '—' : to.pct + '%'}</div><div class="delta">${to.n} session${to.n > 1 ? 's' : ''}</div></div>
     </div>
 
     <h2>Historique des scores</h2>
@@ -1025,7 +1060,7 @@ function renderStats() {
     </div>
 
     <div class="quiz-nav">
-      <button class="btn secondary" onclick="openSettings()">⚙️ Paramètres</button>
+      <button class="btn secondary" onclick="openSettings()">Paramètres</button>
     </div>`;
 
   if (sessions.length >= 2) drawHistoryChart();
@@ -1121,18 +1156,20 @@ function openSettings() {
   div.id = 'settings-modal';
   div.innerHTML = `
     <div class="modal" onclick="event.stopPropagation()">
-      <h3>⚙️ Paramètres</h3>
-      <label>Date de début de la préparation</label>
-      <input type="date" id="set-start" value="${DB.settings.startDate}">
-      <label>Date de l'examen</label>
-      <input type="date" id="set-exam" value="${DB.settings.examDate}">
-      <label>Nouveaux mots de vocabulaire par jour</label>
-      <input type="number" id="set-new" min="1" max="40" value="${DB.settings.newPerDay}">
-      <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
-      <div class="actions">
-        <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Tout réinitialiser</button>
-        <button class="btn secondary small" onclick="closeSettings()">Annuler</button>
-        <button class="btn small" onclick="saveSettings()">Enregistrer</button>
+      <div class="modal-in">
+        <h3>Paramètres</h3>
+        <label>Début de la préparation</label>
+        <input type="date" id="set-start" value="${DB.settings.startDate}">
+        <label>Date de l'examen</label>
+        <input type="date" id="set-exam" value="${DB.settings.examDate}">
+        <label>Nouveaux mots par jour</label>
+        <input type="number" id="set-new" min="1" max="40" value="${DB.settings.newPerDay}">
+        <div id="sync-section">${typeof syncSettingsHTML === 'function' ? syncSettingsHTML() : ''}</div>
+        <div class="actions">
+          <button class="btn secondary small" onclick="if(confirm('Effacer TOUTE la progression (scores, plan, flashcards) ?')){localStorage.removeItem('${LS_KEY}');location.reload()}">Réinitialiser</button>
+          <button class="btn secondary small" onclick="closeSettings()">Annuler</button>
+          ${cta('Enregistrer', 'saveSettings()', 'small')}
+        </div>
       </div>
     </div>`;
   div.addEventListener('click', closeSettings);
@@ -1166,6 +1203,33 @@ function saveSettings() {
 }
 
 /* ============================== Init ============================== */
+
+// Révélation à l'entrée dans le viewport : montée douce + défloutage.
+// IntersectionObserver uniquement (jamais d'écouteur scroll : reflows continus).
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const revealObserver = REDUCED ? null : new IntersectionObserver((entries, obs) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in');
+    obs.unobserve(e.target);
+  });
+}, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+function revealInit() {
+  const targets = document.querySelectorAll('#app .reveal:not(.in)');
+  targets.forEach((el, i) => {
+    if (!revealObserver) { el.classList.add('in'); return; }
+    el.style.transitionDelay = Math.min(i, 7) * 55 + 'ms';
+    revealObserver.observe(el);
+  });
+}
+// Le contenu de #app est remplacé à chaque rendu : on ré-arme après chaque mutation.
+new MutationObserver(() => revealInit()).observe(document.getElementById('app'), { childList: true });
+
+// Chrome de l'application (marque, engrenage) — icônes, pas d'emojis.
+document.getElementById('brand').innerHTML =
+  `${ic('target', 17)}<span>Prépa <span class="tm">Tage&nbsp;Mage</span> · <span class="to">TOEIC</span></span>`;
+document.getElementById('settings-btn').innerHTML = ic('gear', 17);
 
 window.addEventListener('hashchange', navigate);
 window.addEventListener('resize', () => {

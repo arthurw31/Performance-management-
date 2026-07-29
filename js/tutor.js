@@ -22,7 +22,7 @@ Règles :
    bloqués par le navigateur — d'où le repli conseillé vers OpenRouter. */
 const TUTOR_PROVIDERS = {
   managed: {
-    name: '🔒 Intégré — aucune clé à saisir (recommandé)',
+    name: 'Intégré — aucune clé à saisir (recommandé)',
     keyUrl: '',
     endpoint: '', // construit à partir de l\'URL Supabase : /functions/v1/tutor
     format: 'managed',
@@ -82,7 +82,7 @@ const tutorState = {
 function tutorInit() {
   const btn = document.createElement('button');
   btn.id = 'tutor-fab';
-  btn.innerHTML = '🎓';
+  btn.innerHTML = ic('cap', 22);
   btn.title = 'Tuteur IA — pose ta question';
   btn.onclick = toggleTutor;
   document.body.appendChild(btn);
@@ -91,18 +91,18 @@ function tutorInit() {
   panel.id = 'tutor-panel';
   panel.innerHTML = `
     <div class="tutor-head">
-      <strong>🎓 Tuteur IA</strong>
+      <strong>${ic('cap', 15)} Tuteur IA</strong>
       <span class="tutor-head-actions">
-        <button class="iconbtn" title="Nouvelle conversation" onclick="tutorReset()">🗑️</button>
-        <button class="iconbtn" title="Fermer" onclick="toggleTutor()">✕</button>
+        <button class="iconbtn" title="Nouvelle conversation" onclick="tutorReset()">${ic('trash', 15)}</button>
+        <button class="iconbtn" title="Fermer" onclick="toggleTutor()">${ic('close', 15)}</button>
       </span>
     </div>
     <div class="tutor-msgs" id="tutor-msgs"></div>
-    <div id="tutor-ctx" style="display:none;padding:7px 16px;font-size:13.5px;color:var(--accent-strong);background:var(--accent-soft);border-top:1px solid var(--grid)"></div>
+    <div id="tutor-ctx"></div>
     <div class="tutor-input">
       <textarea id="tutor-text" rows="2" placeholder="Explique-moi cette notion, pourquoi cette réponse…"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();tutorSend();}"></textarea>
-      <button class="btn" id="tutor-send" onclick="tutorSend()">➤</button>
+      <button class="btn" id="tutor-send" onclick="tutorSend()">${ic('send', 16)}</button>
     </div>`;
   document.body.appendChild(panel);
   renderTutorMessages();
@@ -140,7 +140,7 @@ function updateTutorCtxBanner() {
   if (!el) return;
   const ctx = tutorCurrentContext();
   el.style.display = ctx ? 'block' : 'none';
-  if (ctx) el.textContent = '📎 Exercice en cours joint automatiquement — pose simplement ta question.';
+  if (ctx) el.textContent = 'Exercice en cours joint automatiquement';
 }
 
 function renderTutorMessages() {
@@ -152,23 +152,23 @@ function renderTutorMessages() {
   if (p.format === 'managed' ? !tutorLoggedIn() : (!DB.settings || !DB.settings.apiKey)) {
     box.innerHTML = p.format === 'managed'
       ? `<div class="tutor-setup">
-          <p><strong>Connecte-toi pour utiliser le tuteur 🎓</strong></p>
+          <p><strong>Connecte-toi pour utiliser le tuteur</strong></p>
           <p>Le tuteur est intégré à la plateforme — aucune clé à configurer.
           Il suffit de te connecter à ton compte (le même que la synchro).</p>
-          <button class="btn small" onclick="openSettings()">⚙️ Se connecter</button>
+          <button class="btn small" onclick="openSettings()">Se connecter</button>
         </div>`
       : `<div class="tutor-setup">
           <p><strong>Configure ton tuteur IA</strong></p>
           <p>Le fournisseur choisi nécessite une clé API, stockée dans ton navigateur et synchronisée via ton compte.</p>
-          <button class="btn small" onclick="openSettings()">⚙️ Ouvrir les réglages</button>
+          <button class="btn small" onclick="openSettings()">Ouvrir les réglages</button>
         </div>`;
     return;
   }
 
   if (!tutorState.messages.length) {
     box.innerHTML = `<div class="tutor-setup">
-      <p>👋 Pose-moi n'importe quelle question sur le Tage Mage ou le TOEIC : une notion pas claire, un exercice raté, une méthode…</p>
-      <p style="color:var(--muted);font-size:12px">Astuce : dans la correction d'une série, le bouton « 🎓 Demander au tuteur » m'envoie directement la question concernée.</p>
+      <p>Pose-moi n'importe quelle question sur le Tage Mage ou le TOEIC : une notion pas claire, un exercice raté, une méthode…</p>
+      <p style="color:var(--muted);font-size:12px">Astuce : dans la correction d'une série, le bouton « Demander au tuteur » m'envoie directement la question concernée.</p>
     </div>`;
     return;
   }
@@ -185,12 +185,12 @@ function renderTutorMessages() {
 function displayText(content) {
   const autoMarker = content.indexOf("[QUESTION DE L'ÉLÈVE]");
   if (autoMarker !== -1) {
-    return `📎 ${content.slice(autoMarker + "[QUESTION DE L'ÉLÈVE]".length).trim()}`;
+    return `${content.slice(autoMarker + "[QUESTION DE L'ÉLÈVE]".length).trim()}`;
   }
   const marker = content.indexOf('[QUESTION DE LA PLATEFORME]');
   if (marker === -1) return content;
   const q = content.match(/Question : ([\s\S]*?)\n/);
-  return `🎓 À propos de : « ${q ? q[1].slice(0, 90) : 'une question de la série'}… » — explique-moi.`;
+  return `À propos de : « ${q ? q[1].slice(0, 90) : 'une question de la série'}… » — explique-moi.`;
 }
 
 /* ---------- Contexte automatique de l'exercice en cours ---------- */
@@ -259,10 +259,10 @@ async function tutorCallClaude() {
     // On envoie uniquement le jeton de session de l'utilisateur connecté.
     const client = (typeof syncClient === 'function') ? syncClient() : null;
     if (!client || !tutorLoggedIn()) {
-      throw new Error('Connecte-toi (réglages ⚙️ → ☁️ Synchro) pour utiliser le tuteur.');
+      throw new Error('Connecte-toi (réglages → Compte) pour utiliser le tuteur.');
     }
     const { data: { session } } = await client.auth.getSession();
-    if (!session) throw new Error('Session expirée — reconnecte-toi dans les réglages ⚙️.');
+    if (!session) throw new Error('Session expirée — reconnecte-toi dans les réglages.');
 
     let res;
     try {
@@ -314,7 +314,7 @@ async function tutorCallClaude() {
   try {
     res = await fetch(p.endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
   } catch {
-    throw new Error(`Impossible de joindre ${p.endpoint.split('/')[2]} depuis le navigateur (blocage CORS ou réseau). Ce fournisseur n'autorise probablement pas les appels directs — passe sur OpenRouter dans les réglages ⚙️ : mêmes modèles DeepSeek/GLM, et ça fonctionne dans le navigateur.`);
+    throw new Error(`Impossible de joindre ${p.endpoint.split('/')[2]} depuis le navigateur (blocage CORS ou réseau). Ce fournisseur n'autorise probablement pas les appels directs — passe sur OpenRouter dans les réglages : mêmes modèles DeepSeek/GLM, et ça fonctionne dans le navigateur.`);
   }
 
   if (!res.ok) {
@@ -322,7 +322,7 @@ async function tutorCallClaude() {
     try {
       const err = await res.json();
       const detail = err.error && (err.error.message || err.error);
-      if (res.status === 401 || res.status === 403) msg = "Clé API invalide ou non autorisée — vérifie-la dans les réglages ⚙️.";
+      if (res.status === 401 || res.status === 403) msg = "Clé API invalide ou non autorisée — vérifie-la dans les réglages.";
       else if (res.status === 402) msg = "Crédit épuisé chez le fournisseur — recharge ton compte.";
       else if (res.status === 429) msg = "Limite de requêtes atteinte — attends un instant puis réessaie.";
       else if (detail) msg = `${msg} : ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`;
@@ -379,7 +379,7 @@ async function tutorSend(prefilled) {
     renderTutorMessages();
     const box = document.getElementById('tutor-msgs');
     if (box) {
-      box.insertAdjacentHTML('beforeend', `<div class="tutor-msg assistant">⚠️ ${esc(e.message)}</div>`);
+      box.insertAdjacentHTML('beforeend', `<div class="tutor-msg assistant">${esc(e.message)}</div>`);
       box.scrollTop = box.scrollHeight;
     }
     if (input && prefilled === undefined) input.value = text;
